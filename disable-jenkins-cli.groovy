@@ -29,6 +29,7 @@ THE SOFTWARE.
    This init script for Jenkins fixes a zero day vulnerability.
    http://jenkins-ci.org/content/mitigating-unauthenticated-remote-code-execution-0-day-jenkins-cli
    https://github.com/jenkinsci-cert/SECURITY-218
+   https://github.com/samrocketman/jenkins-script-console-scripts/blob/master/disable-jenkins-cli.groovy
  */
 
 import jenkins.*;
