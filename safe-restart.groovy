@@ -19,13 +19,38 @@
     CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 /*
-   This script deletes all slaves from Jenkins which are offline.
+   This script starts a background thread which will wait for Jenkins to finish
+   executing jobs before restarting.  The thread will abort if shutdown mode is
+   disabled before jobs finish.
+
+   Tested on Jenkins ver. 2.7.1
 */
-println "Cleaning up offline slaves..."
-hudson.model.Hudson.instance.slaves.each {
-    if(it.getComputer().isOffline()) {
-        println "Deleting ${it.name}"
-        it.getComputer().doDoDelete()
+
+import hudson.model.RestartListener
+import java.util.logging.Level
+import java.util.logging.Logger
+
+//user configurable variable
+int timeout_seconds = 60
+
+Logger logger = Logger.getLogger('jenkins.instance.restart')
+
+//start a background thread
+def thread = Thread.start {
+    logger.log(Level.INFO, "Jenkins safe restart initiated.")
+    while(true) {
+        if(Jenkins.instance.isQuietingDown()) {
+            if(RestartListener.isAllReady()) {
+                Jenkins.instance.restart()
+            }
+            logger.log(Level.INFO, "Jenkins jobs are not idle.  Waiting ${timeout_seconds} seconds before next restart attempt.")
+            sleep(timeout_seconds*1000)
+        }
+        else {
+            logger.log(Level.INFO, "Shutdown mode not enabled.  Jenkins restart aborted.")
+            break
+        }
     }
 }
-println "Done."
+
+println "A safe restart has been scheduled.  See the Jenkins logs for restart status updates."
