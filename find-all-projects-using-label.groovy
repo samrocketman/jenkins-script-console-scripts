@@ -23,14 +23,27 @@
    particular label.  Useful for finding all projects using a particular set of
    agents.
 */
-import hudson.model.FreeStyleProject
+import hudson.model.Job
 
-String label = 'language:shell'
+String labels = ['language:shell', 'language:ruby']
 
 projects = []
 //getAllItems searches a global lookup table of items regardless of folder structure
-Jenkins.instance.getAllItems(FreeStyleProject.class).each { i ->
-    if(i.getAssignedLabelString().contains(label)) {
+Jenkins.instance.getAllItems(Job.class).each { i ->
+    Boolean labelFound = false
+    labels.each { label ->
+        if(i.class.simpleName == 'FreeStyleProject') {
+            if(i.getAssignedLabelString().contains(label)) {
+                labelFound = true
+            }
+        }
+        else if(i.class.simpleName == 'WorkflowJob') {
+            if(i.getDefinition().getScript().contains(label)) {
+                labelFound = true
+            }
+        }
+    }
+    if(labelFound) {
         projects << "${i.fullName.split('/')[0]}/${i.displayName.split(' ')[0]}"
     }
 }
