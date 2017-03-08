@@ -25,9 +25,9 @@
 */
 import hudson.model.Job
 
-String labels = ['language:shell', 'language:ruby']
+List labels = ['language:shell', 'language:ruby']
 
-projects = []
+projects = [] as Set
 //getAllItems searches a global lookup table of items regardless of folder structure
 Jenkins.instance.getAllItems(Job.class).each { i ->
     Boolean labelFound = false
@@ -47,6 +47,6 @@ Jenkins.instance.getAllItems(Job.class).each { i ->
         projects << "${i.fullName.split('/')[0]}/${i.displayName.split(' ')[0]}"
     }
 }
-(projects as Set).each { println it }
+projects.each { println it }
 //null so no result shows up
 null
