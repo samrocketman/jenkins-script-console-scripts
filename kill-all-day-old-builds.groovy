@@ -37,15 +37,15 @@ import java.util.Calendar
 import jenkins.model.Jenkins
 import org.jenkinsci.plugins.workflow.job.WorkflowRun
 
-//24 hours ago
-long day_in_millis = 24*3600*1000
+//24 hours in a day, 3600 seconds in 1 hour, 1000 milliseconds in 1 second
+long time_in_millis = 24*3600*1000
 Calendar rightNow = Calendar.getInstance()
 
 Jenkins.instance.getAllItems(Job.class).findAll { Job job ->
     job.isBuilding()
 }.collect { Job job ->
     job.getBuilds().findAll { Run run ->
-        run.isBuilding() && ((rightNow.getTimeInMillis() - run.getStartTimeInMillis()) > day_in_millis)
+        run.isBuilding() && ((rightNow.getTimeInMillis() - run.getStartTimeInMillis()) > time_in_millis)
     }
 }.each { List listOfRuns ->
     if(listOfRuns) {
