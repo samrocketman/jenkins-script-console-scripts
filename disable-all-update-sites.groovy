@@ -32,8 +32,10 @@ import jenkins.model.Jenkins
 def j = Jenkins.instance
 for(UpdateSite site : j.getUpdateCenter().getSiteList()) {
     site.neverUpdate = true
-    site.data = null
-    site.dataLastReadFromFile = -1
+    try {
+        site.data = null
+        site.dataLastReadFromFile = -1
+    } catch(Exception e) {}
     site.dataTimestamp = 0
     new File(j.getRootDir(), "updates/${site.id}.json").delete()
 }
