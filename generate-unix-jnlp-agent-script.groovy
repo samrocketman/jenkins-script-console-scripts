@@ -48,8 +48,7 @@ String getJenkinsUrl() {
   jenkins.rootUrl.trim().replaceAll('/$', '') as String
 }
 
-shell_script_template = '''
-#!/bin/bash
+shell_script_template = '''#!/bin/bash
 #This shell script was automatically generated
 #https://github.com/samrocketman/jenkins-script-console-scripts/generate-unix-jnlp-agent-script.groovy
 #DESCRIPTION:
@@ -67,7 +66,7 @@ if [ "$1" = "stop" ]; then
     false
   else
     kill $(<agent.pid)
-    \rm agent.pid
+    \\\\rm agent.pid
   fi
   exit $?
 elif [ "$#" -gt 0 -a ! "$1" = "start" ]; then
@@ -96,7 +95,6 @@ function download_url() {
   fi
 }
 
-
 #pre-flight tests (if any fail then script will exit)
 id -un
 echo "JAVA_HOME=${JAVA_HOME}"
@@ -114,8 +112,7 @@ elif [ -x "$(type -P shasum)" ]; then
 fi
 
 exec nohup "${JAVA_HOME}/bin/java" ${JAVA_OPTS} -jar slave.jar -jnlpUrl "${JENKINS_URL}/${COMPUTER_URL}/slave-agent.jnlp" -secret ${COMPUTER_SECRET} > agent.log 2>&1 &
-echo $! > agent.pid
-'''.replaceAll(Pattern.quote('$'), Matcher.quoteReplacement('\\$'))
+echo $! > agent.pid'''.replaceAll(Pattern.quote('$'), Matcher.quoteReplacement('\\$'))
 
 
 Map scriptBinding = [
