@@ -40,7 +40,7 @@ if(!binding.hasVariable('projectFullNameStartsWith')) {
 Jenkins.instance.getAllItems(Job.class).findAll {
     it.fullName.startsWith(projectFullNameStartsWith) && it.isBuilding()
 }.collect { Job job ->
-    job.getBuilds().findAll { Run run ->
+    job.builds.findAll { Run run ->
         run.isBuilding()
     }
 }.each { List listOfRuns ->
