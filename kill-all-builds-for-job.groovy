@@ -21,11 +21,38 @@
 /*
    This script will kill all in-progress builds associated with a Jenkins job.
 */
+import hudson.model.FreeStyleBuild
+import hudson.model.Result
+import hudson.model.Run
 import jenkins.model.Jenkins
+import org.jenkinsci.plugins.workflow.job.WorkflowRun
 
-def project = Jenkins.instance.getItemByFullName('folder/project')
+if(!binding.hasVariable('dryRun')) {
+    dryRun = true
+}
+if(!binding.hasVariable('projectFullName')) {
+    projectFullName = 'folder/project'
+}
 
-project.builds.each{ build ->
+Jenkins.instance.getItemByFullName(projectFullName).builds.each { Run item ->
+    if(item.isBuilding()) {
+        if(item instanceof WorkflowRun) {
+            WorkflowRun run = (WorkflowRun) item
+            if(!dryRun) {
+                run.doKill()
+            }
+            println "Killed ${run}"
+        } else if(item instanceof FreeStyleBuild) {
+            FreeStyleBuild run = (FreeStyleBuild) item
+            if(!dryRun) {
+                run.executor.interrupt(Result.ABORTED)
+            }
+            println "Killed ${run}"
+        } else {
+            println "WARNING: Don't know how to handle ${item.class}"
+        }
+    }
+}.each{ build ->
   if(build.isBuilding()) {
     build.doKill()
     println "killed ${build}"
