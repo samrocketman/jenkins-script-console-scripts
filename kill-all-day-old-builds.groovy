@@ -36,6 +36,7 @@ import hudson.model.Run
 import java.util.Calendar
 import jenkins.model.Jenkins
 import org.jenkinsci.plugins.workflow.job.WorkflowRun
+import org.jenkinsci.plugins.workflow.support.steps.StageStepExecution
 
 //24 hours in a day, 3600 seconds in 1 hour, 1000 milliseconds in 1 second
 long time_in_millis = 24*3600*1000
@@ -53,7 +54,10 @@ Jenkins.instance.getAllItems(Job.class).findAll { Job job ->
         listOfRuns.each { Run item ->
             if(item instanceof WorkflowRun) {
                 WorkflowRun run = (WorkflowRun) item
+                //hard kill
                 run.doKill()
+                //release pipeline concurrency locks
+                StageStepExecution.exit(run)
                 println "Killed ${run}"
             } else if(item instanceof FreeStyleBuild) {
                 FreeStyleBuild run = (FreeStyleBuild) item

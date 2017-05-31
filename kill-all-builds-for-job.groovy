@@ -26,6 +26,7 @@ import hudson.model.Result
 import hudson.model.Run
 import jenkins.model.Jenkins
 import org.jenkinsci.plugins.workflow.job.WorkflowRun
+import org.jenkinsci.plugins.workflow.support.steps.StageStepExecution
 
 if(!binding.hasVariable('dryRun')) {
     dryRun = true
@@ -39,7 +40,10 @@ Jenkins.instance.getItemByFullName(projectFullName).builds.each { Run item ->
         if(item instanceof WorkflowRun) {
             WorkflowRun run = (WorkflowRun) item
             if(!dryRun) {
+                //hard kill
                 run.doKill()
+                //release pipeline concurrency locks
+                StageStepExecution.exit(run)
             }
             println "Killed ${run}"
         } else if(item instanceof FreeStyleBuild) {
