@@ -33,8 +33,7 @@ j.slaves.each { slave ->
         executors.each { executor ->
             if(executor.isBusy()) {
                 active_builds++
-            }
-            else {
+            } else {
                 inactive_executors++
             }
         }

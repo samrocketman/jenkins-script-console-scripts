@@ -68,7 +68,6 @@ Jenkins.instance.getAllItems(Job.class).findAll {
         }
     }
 }
-null
 
 //null so no result shows up
 null

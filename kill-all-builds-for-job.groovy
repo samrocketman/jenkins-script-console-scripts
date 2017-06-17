@@ -57,10 +57,10 @@ Jenkins.instance.getItemByFullName(projectFullName).builds.each { Run item ->
         }
     }
 }.each{ build ->
-  if(build.isBuilding()) {
-    build.doKill()
-    println "killed ${build}"
-  }
+    if(build.isBuilding()) {
+        build.doKill()
+        println "killed ${build}"
+    }
 }
 
 //null so no result shows up

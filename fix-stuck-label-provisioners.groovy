@@ -41,8 +41,7 @@ Jenkins.instance.labels.each { Label label ->
             label.@nodeProvisioner.@pendingLaunches.set([] as List<PlannedNode>)
             println "FIXED"
         }
-    }
-    catch(Exception e) {
+    } catch(Exception e) {
         //label.@nodeProvisioner.@pendingLaunches.set([] as List<PlannedNode>)
         println "ERROR: ${label}"
     }

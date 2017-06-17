@@ -36,8 +36,7 @@ Jenkins.instance.getAllItems(Job.class).each { i ->
             if(i.getAssignedLabelString().contains(label)) {
                 labelFound = true
             }
-        }
-        else if(i.class.simpleName == 'WorkflowJob') {
+        } else if(i.class.simpleName == 'WorkflowJob') {
             if(i.getDefinition().getScript().contains(label)) {
                 labelFound = true
             }
