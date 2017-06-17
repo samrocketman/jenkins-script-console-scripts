@@ -60,13 +60,24 @@ shell_script_template = '''#!/bin/bash
 #  Stop the agent:
 #    bash agent.sh stop
 
+JENKINS_URL="<%= jenkins_url %>"
+JENKINS_HOME="<%= jenkins_home %>"
+COMPUTER_URL="<%= computer_url %>"
+COMPUTER_SECRET="<%= computer_secret %>"
+JAVA_OPTS="<%= java_opts %>"
+OS_KERNEL="$(uname)"
+AGENT_PREFIX="${AGENT_PREFIX:-${JENKINS_HOME}}"
+AGENT_PID="${AGENT_PREFIX}/agent.pid"
+AGENT_LOG="${AGENT_PREFIX}/agent.log"
+
 if [ "$1" = "stop" ]; then
-  if [ ! -f "agent.pid" ]; then
-    echo "No agent.pid.  Nothing to stop." 1>&2
+  cd "${JENKINS_HOME}"
+  if [ ! -f "${AGENT_PID}" ]; then
+    echo "No ${AGENT_PID}.  Nothing to stop." 1>&2
     false
   else
-    kill $(<agent.pid)
-    \\\\rm agent.pid
+    kill $(<"${AGENT_PID}")
+    rm -f "${AGENT_PID}"
   fi
   exit $?
 elif [ "$#" -gt 0 -a ! "$1" = "start" ]; then
@@ -75,20 +86,14 @@ elif [ "$#" -gt 0 -a ! "$1" = "start" ]; then
   exit 1
 fi
 set -uxe
-JENKINS_URL="<%= jenkins_url %>"
-JENKINS_HOME="<%= jenkins_home %>"
-COMPUTER_URL="<%= computer_url %>"
-COMPUTER_SECRET="<%= computer_secret %>"
-JAVA_OPTS="<%= java_opts %>"
-OS_KERNEL="$(uname)"
 
 function download_url() {
   URL="$1"
   LOCAL_FILE="${1##*/}"
   if [ -x "$(type -p curl)" ]; then
-    curl -f -o "${LOCAL_FILE}" "${URL}"
+    curl -f -o "${AGENT_PREFIX}/${LOCAL_FILE}" "${URL}"
   elif [ -x "$(type -p wget)" ]; then
-    wget -O "${LOCAL_FILE}" "${URL}"
+    wget -O "${AGENT_PREFIX}/${LOCAL_FILE}" "${URL}"
   else
     echo "No supported download method found." 1>&2
     return 1
@@ -111,8 +116,8 @@ elif [ -x "$(type -P shasum)" ]; then
   echo "${JNLP_JAR_SHA}  slave.jar" | shasum -a 256 -c -
 fi
 
-exec nohup "${JAVA_HOME}/bin/java" ${JAVA_OPTS} -jar slave.jar -jnlpUrl "${JENKINS_URL}/${COMPUTER_URL}/slave-agent.jnlp" -secret ${COMPUTER_SECRET} > agent.log 2>&1 &
-echo $! > agent.pid'''.replaceAll(Pattern.quote('$'), Matcher.quoteReplacement('\\$'))
+exec nohup "${JAVA_HOME}/bin/java" ${JAVA_OPTS} -jar slave.jar -jnlpUrl "${JENKINS_URL}/${COMPUTER_URL}/slave-agent.jnlp" -secret ${COMPUTER_SECRET} > "${AGENT_LOG}" 2>&1 &
+echo $! > "${AGENT_PID}"'''.replaceAll(Pattern.quote('$'), Matcher.quoteReplacement('\\$'))
 
 
 Map scriptBinding = [
