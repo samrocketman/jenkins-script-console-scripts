@@ -31,6 +31,10 @@ if(!binding.hasVariable('agent_name')) {
     //binding doesn't exist so set a default
     agent_name = 'my-agent'
 }
+//type check user defined parameters/bindings
+if(!(agent_name instanceof String)) {
+    throw new Exception('PARAMETER ERROR: agent_name must be a string.')
+}
 
 //script bindings
 jenkins = Jenkins.instance

@@ -31,7 +31,13 @@ import java.util.logging.Level
 import java.util.logging.Logger
 
 //user configurable variable
-int timeout_seconds = 60
+if(!binding.hasVariable('timeout_seconds')) {
+    timeout_seconds = 60
+}
+//type check user defined parameters/bindings
+if(!(timeout_seconds instanceof Integer)) {
+    throw new Exception('PARAMETER ERROR: timeout_seconds must be a string.')
+}
 
 Logger logger = Logger.getLogger('jenkins.instance.restart')
 

@@ -37,6 +37,13 @@ if(!binding.hasVariable('dryRun')) {
 if(!binding.hasVariable('projectFullNameStartsWith')) {
     projectFullNameStartsWith = 'folder/project'
 }
+//type check user defined parameters/bindings
+if(!(dryRun instanceof Boolean)) {
+    throw new Exception('PARAMETER ERROR: dryRun must be a boolean.')
+}
+if(!(projectFullNameStartsWith instanceof String)) {
+    throw new Exception('PARAMETER ERROR: projectFullNameStartsWith must be a string.')
+}
 
 Jenkins.instance.getAllItems(Job.class).findAll {
     it.fullName.startsWith(projectFullNameStartsWith) && it.isBuilding()

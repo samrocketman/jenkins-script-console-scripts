@@ -35,6 +35,14 @@ if(!binding.hasVariable('projectFullName')) {
     projectFullName = 'folder/project'
 }
 
+//type check user defined parameters/bindings
+if(!(dryRun instanceof Boolean)) {
+    throw new Exception('PARAMETER ERROR: dryRun must be a boolean.')
+}
+if(!(projectFullName instanceof String)) {
+    throw new Exception('PARAMETER ERROR: projectFullName must be a string.')
+}
+
 Jenkins.instance.getItemByFullName(projectFullName).builds.each { Run item ->
     if(item.isBuilding()) {
         if(item instanceof WorkflowRun) {

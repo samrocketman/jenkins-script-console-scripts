@@ -28,7 +28,13 @@ import com.cloudbees.hudson.plugins.folder.Folder
 import hudson.views.tabbar.DropDownViewsTabBar
 
 //maximum number of views before converting views tab to a dropdown list
-int max_views = 5
+if(!binding.hasVariable('max_views')) {
+    max_views = 5
+}
+//type check user defined parameters/bindings
+if(!(max_views instanceof Integer)) {
+    throw new Exception('PARAMETER ERROR: max_views must be a string.')
+}
 
 List<String> message = []
 Jenkins.instance.getAllItems(Folder.class).each { i ->

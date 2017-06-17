@@ -39,7 +39,7 @@ if(!binding.hasVariable('formatJervis')) {
     formatJervis = false
 }
 
-//type check user defined parameters
+//type check user defined parameters/bindings
 if(!(labels instanceof List) || (false in labels.collect { it instanceof String } )) {
     throw new Exception('PARAMETER ERROR: labels must be a list of strings.')
 }
