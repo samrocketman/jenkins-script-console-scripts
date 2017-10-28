@@ -33,7 +33,7 @@ import jenkins.model.Jenkins
 
 //downloadFile and sha256sum copied from sandscape
 //https://github.com/sandscape/sandscape/blob/master/scripts/functions.groovy
-downloadFile = { String url, String fullpath ->
+boolean downloadFile(String url, String fullpath) {
     try {
         new File(fullpath).with { file ->
             //make parent directories if they don't exist
@@ -53,21 +53,23 @@ downloadFile = { String url, String fullpath ->
     return true
 }
 
-sha256sum = { input ->
+//can take a String or File as an argument
+String sha256sum(def input) {
     MessageDigest.getInstance('SHA-256').digest(input.bytes).encodeHex().toString()
 }
 
 //main method
-disable_jenkins_cli_script = "${Jenkins.instance.root}/init.groovy.d/disable-jenkins-cli.groovy".toString()
-downloadFile('https://raw.githubusercontent.com/samrocketman/jenkins-script-console-scripts/master/disable-jenkins-cli.groovy', disable_jenkins_cli_script)
-new File(disable_jenkins_cli_script).with { f ->
+String remote_jenkins_cli_script = 'https://raw.githubusercontent.com/samrocketman/jenkins-script-console-scripts/master/disable-jenkins-cli.groovy'
+String local_jenkins_cli_script = "${Jenkins.instance.root}/init.groovy.d/disable-jenkins-cli.groovy"
+downloadFile(remote_jenkins_cli_script, local_jenkins_cli_script)
+new File(local_jenkins_cli_script).with { f ->
     if(sha256sum(f) == '06defb6916c7b481bb48a34e96a2752de6bffc52e10990dce82be74076e037a4') {
-        println "Disable Jenkins CLI script successfully installed to ${disable_jenkins_cli_script} (patch persists on Jenkins restart)."
+        println "Disable Jenkins CLI script successfully installed to ${local_jenkins_cli_script} (patch persists on Jenkins restart)."
         try {
             evaluate(f)
             println 'Runtime has been patched to disable Jenkins CLI.  No restart necessary.'
         } catch(Exception e) {
-            println "ERROR: Runtime patching has failed.  Removed ${disable_jenkins_cli_script}"
+            println "ERROR: Runtime patching has failed.  Removed ${local_jenkins_cli_script}"
             f.delete()
             throw e
         }
