@@ -33,7 +33,7 @@ import jenkins.model.Jenkins
 
 //downloadFile and sha256sum copied from sandscape
 //https://github.com/sandscape/sandscape/blob/master/scripts/functions.groovy
-boolean downloadFile(String url, String fullpath) {
+void downloadFile(String url, String fullpath) {
     new File(fullpath).with { f ->
         //make parent directories if they don't exist
         if(!f.parentFile.exists()) {
