@@ -23,39 +23,16 @@
    This script completely disables Jenkins CLI and ensures that it will remain
    disabled when Jenkins is restarted.
 
-   - Installs disable-jenkins-cli.groovy script to $JENKINS_HOME/init.groovy.d
+   - Installs disable-jenkins-cli.groovy script to JENKINS_HOME/init.groovy.d
    - Evaluates disable-jenkins-cli.groovy to patch the Jenkins runtime so no
      restart is required.
 */
 
+import java.security.MessageDigest
 import jenkins.model.Jenkins
 
-/*
-   Define available bindings.  The bindings had to be listed first in order for
-   recursion to work within closures.
-*/
-downloadFile = null
-sha256sum = null
-
-/**
-Download a file to a local `fullpath`.  If the parent directories of the path
-are missing then they are automatically created (similar to the Linux command
-`mkdir -p`).
-
-USAGE:
-
-    downloadFile('http://example.com', '/tmp/foo/index.html')
-
-PARAMETERS:
-
-* `url` - A `String` which is a URL to a file on a website.
-* `fullpath` - A `String` which is a full file path.  It is the destination of
-  the downloaded file.
-
-RETURNS:
-
-A `Bolean`, `true` if downloading the file was a success or `false` if not.
-*/
+//downloadFile and sha256sum copied from sandscape
+//https://github.com/sandscape/sandscape/blob/master/scripts/functions.groovy
 downloadFile = { String url, String fullpath ->
     try {
         new File(fullpath).with { file ->
@@ -76,22 +53,8 @@ downloadFile = { String url, String fullpath ->
     return true
 }
 
-/**
-Calculate the SHA-256 hash of an object.
-
-USAGE:
-
-    sha256sum('some string')
-    sha256sum(new File('path-to-file'))
-
-RETURNS:
-
-A `String`, which is the SHA-256 hex digest of the object passed.
-*/
 sha256sum = { input ->
-    def digest = java.security.MessageDigest.getInstance("SHA-256")
-    digest.update( input.bytes )
-    new BigInteger(1,digest.digest()).toString(16).padLeft(64, '0')
+    MessageDigest.getInstance('SHA-256').digest(input.bytes).encodeHex().toString()
 }
 
 //main method
