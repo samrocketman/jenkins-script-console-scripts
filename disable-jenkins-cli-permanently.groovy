@@ -34,23 +34,16 @@ import jenkins.model.Jenkins
 //downloadFile and sha256sum copied from sandscape
 //https://github.com/sandscape/sandscape/blob/master/scripts/functions.groovy
 boolean downloadFile(String url, String fullpath) {
-    try {
-        new File(fullpath).with { file ->
-            //make parent directories if they don't exist
-            if(!file.getParentFile().exists()) {
-                file.getParentFile().mkdirs()
-            }
-            file.newOutputStream().with { file_os ->
-                file_os << new URL(url).openStream()
-                file_os.close()
-            }
+    new File(fullpath).with { f ->
+        //make parent directories if they don't exist
+        if(!f.parentFile.exists()) {
+            f.parentFile.mkdirs()
+        }
+        f.newOutputStream().with { fos ->
+            fos << new URL(url).openStream()
+            fos.close()
         }
     }
-    catch(Exception e) {
-        sandscapeErrorLogger(ExceptionUtils.getStackTrace(e))
-        return false
-    }
-    return true
 }
 
 //can take a String or File as an argument
@@ -64,7 +57,7 @@ String local_jenkins_cli_script = "${Jenkins.instance.root}/init.groovy.d/disabl
 downloadFile(remote_jenkins_cli_script, local_jenkins_cli_script)
 new File(local_jenkins_cli_script).with { f ->
     if(sha256sum(f) == '06defb6916c7b481bb48a34e96a2752de6bffc52e10990dce82be74076e037a4') {
-        println "Disable Jenkins CLI script successfully installed to ${local_jenkins_cli_script} (patch persists on Jenkins restart)."
+        println "Installed ${local_jenkins_cli_script} (patch persists on Jenkins restart)."
         try {
             evaluate(f)
             println 'Runtime has been patched to disable Jenkins CLI.  No restart necessary.'
