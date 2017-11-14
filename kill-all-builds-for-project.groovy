@@ -37,42 +37,44 @@ if(!binding.hasVariable('dryRun')) {
 if(!binding.hasVariable('projectFullNameStartsWith')) {
     projectFullNameStartsWith = 'folder/project'
 }
+
+if(dryRun in String) {
+    dryRun = (dryRun.toLowerCase() != 'false') as Boolean
+}
+
 //type check user defined parameters/bindings
-if(!(dryRun instanceof Boolean)) {
+if(!(dryRun in Boolean)) {
     throw new Exception('PARAMETER ERROR: dryRun must be a boolean.')
 }
-if(!(projectFullNameStartsWith instanceof String)) {
+if(!(projectFullNameStartsWith in String)) {
     throw new Exception('PARAMETER ERROR: projectFullNameStartsWith must be a string.')
 }
 
 Jenkins.instance.getAllItems(Job.class).findAll {
     it.fullName.startsWith(projectFullNameStartsWith) && it.isBuilding()
 }.collect { Job job ->
+    //find all matching items and return a list but if null then return an empty list
     job.builds.findAll { Run run ->
         run.isBuilding()
-    }
-}.each { List listOfRuns ->
-    if(listOfRuns) {
-        listOfRuns.each { Run item ->
-            if(item instanceof WorkflowRun) {
-                WorkflowRun run = (WorkflowRun) item
-                if(!dryRun) {
-                    //hard kill
-                    run.doKill()
-                    //release pipeline concurrency locks
-                    StageStepExecution.exit(run)
-                }
-                println "Killed ${run}"
-            } else if(item instanceof FreeStyleBuild) {
-                FreeStyleBuild run = (FreeStyleBuild) item
-                if(!dryRun) {
-                    run.executor.interrupt(Result.ABORTED)
-                }
-                println "Killed ${run}"
-            } else {
-                println "WARNING: Don't know how to handle ${item.class}"
-            }
+    } ?: []
+}.sum().each { Run item ->
+    if(item in WorkflowRun) {
+        WorkflowRun run = (WorkflowRun) item
+        if(!dryRun) {
+            //hard kill
+            run.doKill()
+            //release pipeline concurrency locks
+            StageStepExecution.exit(run)
         }
+        println "Killed ${run}"
+    } else if(item in FreeStyleBuild) {
+        FreeStyleBuild run = (FreeStyleBuild) item
+        if(!dryRun) {
+            run.executor.interrupt(Result.ABORTED)
+        }
+        println "Killed ${run}"
+    } else {
+        println "WARNING: Don't know how to handle ${item.class}"
     }
 }
 
