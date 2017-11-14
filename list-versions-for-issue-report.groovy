@@ -23,8 +23,9 @@
   environment in Jenkins issues.
  */
 
+import jenkins.model.Jenkins
+
 println "Jenkins version ${Jenkins.instance.version}"
-Jenkins.instance.pluginManager.plugins.sort { it.shortName }.each { p ->
-	println "${p.shortName} ${p.version}"
-}
-null
+println Jenkins.instance.pluginManager.plugins.sort { it.shortName }.collect { p ->
+    "${p.shortName} ${p.version}"
+}.join('\n')
