@@ -39,26 +39,38 @@ if(!binding.hasVariable('formatJervis')) {
     formatJervis = false
 }
 
+if(labels in String) {
+    labels = (labels.contains(',')) ? labels.split(',') : [labels]
+}
+if(evaluateOr in String) {
+    evaluateOr = (evaluateOr != 'false')
+}
+if(formatJervis in String) {
+    formatJervis = (formatJervis != 'false')
+}
+
 //type check user defined parameters/bindings
-if(!(labels instanceof List) || (false in labels.collect { it instanceof String } )) {
+if(!(labels in List) || (false in labels.collect { it in String } )) {
     throw new Exception('PARAMETER ERROR: labels must be a list of strings.')
 }
-if(!(evaluateOr instanceof Boolean)) {
+if(!(evaluateOr in Boolean)) {
     throw new Exception('PARAMETER ERROR: evaluateOr must be a boolean.')
 }
-if(!(formatJervis instanceof Boolean)) {
+if(!(formatJervis in Boolean)) {
     throw new Exception('PARAMETER ERROR: formatJervis must be a boolean.')
 }
 
 projects = [] as Set
 //getAllItems searches a global lookup table of items regardless of folder structure
-Jenkins.instance.getAllItems(Job.class).each { i ->
+Jenkins.instance.getAllItems(Job.class).each { Job job ->
     Boolean labelFound = false
     String jobLabelString
-    if(i.class.simpleName == 'FreeStyleProject') {
-        jobLabelString = i.getAssignedLabelString()
-    } else if(i.class.simpleName == 'WorkflowJob') {
-        jobLabelString = i.getDefinition().getScript()
+    if(job.class.simpleName == 'FreeStyleProject') {
+        jobLabelString = job.getAssignedLabelString()
+    } else if(job.class.simpleName == 'WorkflowJob') {
+        jobLabelString = job.getDefinition().getScript()
+    } else {
+        throw new Exception("Don't know how to handle class: ${job.getClass()}")
     }
     List results = labels.collect { label ->
         jobLabelString.contains(label)
@@ -74,12 +86,12 @@ Jenkins.instance.getAllItems(Job.class).each { i ->
 
     if(labelFound) {
         if(formatJervis) {
-            projects << "${i.fullName.split('/')[0]}/${i.displayName.split(' ')[0]}"
+            projects << "${job.fullName.split('/')[0]}/${job.displayName.split(' ')[0]}"
         } else {
             projects << i.fullName
         }
     }
 }
-projects.each { println it }
+println(projects.join('\n'))
 //null so no result shows up
 null
