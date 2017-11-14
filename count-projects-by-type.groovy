@@ -25,15 +25,15 @@ import hudson.model.Job
 import jenkins.model.Jenkins
 
 projects = [:]
-Jenkins.instance.getAllItems(Job.class).each { j ->
-    def jc = j.class.simpleName
+Jenkins.instance.getAllItems(Job.class).each { Job j ->
+    String jc = j.class.simpleName
     if(!(jc in projects)) {
         projects[jc] = 0
     }
     projects[jc]++
 }
 println "Count projects by type:"
-projects.each { k,v ->
+projects.each { k, v ->
     println "    ${k}: ${v}"
 }
 null
