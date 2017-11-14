@@ -21,8 +21,10 @@
 /*
    This script deletes all slaves from Jenkins which are offline.
 */
+import jenkins.model.Jenkins
+
 println "Cleaning up offline slaves..."
-hudson.model.Hudson.instance.slaves.each {
+Jenkins.instance.slaves.each {
     if(it.getComputer().isOffline()) {
         println "Deleting ${it.name}"
         it.getComputer().doDoDelete()
