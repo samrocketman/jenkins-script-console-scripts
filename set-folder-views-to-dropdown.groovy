@@ -31,14 +31,19 @@ import hudson.views.tabbar.DropDownViewsTabBar
 if(!binding.hasVariable('max_views')) {
     max_views = 5
 }
+
+if(max_views in String) {
+    max_views = Integer.decode(max_views)
+}
+
 //type check user defined parameters/bindings
-if(!(max_views instanceof Integer)) {
-    throw new Exception('PARAMETER ERROR: max_views must be a string.')
+if(!(max_views in Integer)) {
+    throw new Exception('PARAMETER ERROR: max_views must be an integer.')
 }
 
 List<String> message = []
 Jenkins.instance.getAllItems(Folder.class).each { i ->
-    if(i.views.size() > max_views && !(i.folderViews.tabBar instanceof DropDownViewsTabBar)) {
+    if(i.views.size() > max_views && !(i.folderViews.tabBar in DropDownViewsTabBar)) {
         i.folderViews.tabBar = new DropDownViewsTabBar()
         i.save()
         message << i.fullName.toString()
