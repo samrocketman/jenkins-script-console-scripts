@@ -31,9 +31,9 @@ import java.util.concurrent.locks.ReentrantLock
 import jenkins.model.Jenkins
 
 find_command_list = [
-  "timeout 1800 find /home/jenkins/.m2 -mtime +1 -type d -name '*-SNAPSHOT' -prune",
-  "timeout 1800 find /tmp -maxdepth 1 -mtime +1 -type d \\\\( -name 'tmp[_0-9a-zA-Z]*' -o -name 'npm-*' \\\\) -prune",
-  "timeout 1800 find /tmp/phantomjs -maxdepth 1 -mtime +1 -name 'phantomjs-*' -prune"
+    "timeout 1800 find /home/jenkins/.m2 -mtime +1 -type d -name '*-SNAPSHOT' -prune",
+    "timeout 1800 find /tmp -maxdepth 1 -mtime +1 -type d \\\\( -name 'tmp[_0-9a-zA-Z]*' -o -name 'npm-*' \\\\) -prune",
+    "timeout 1800 find /tmp/phantomjs -maxdepth 1 -mtime +1 -name 'phantomjs-*' -prune"
 ]
 
 //user configurable variable; set dryRun=false to really delete files
@@ -54,13 +54,12 @@ if(!dryRun) {
 
 //customize withLock and create a script binding lock variable to be shared across threads
 ReentrantLock.metaClass.withLock = {
-  lock()
-  try {
-    it()
-  }
-  finally {
-      unlock()
-  }
+    lock()
+    try {
+        it()
+    } finally {
+        unlock()
+    }
 }
 lock = new ReentrantLock()
 
