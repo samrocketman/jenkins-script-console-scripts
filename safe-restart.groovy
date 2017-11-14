@@ -34,9 +34,14 @@ import java.util.logging.Logger
 if(!binding.hasVariable('timeout_seconds')) {
     timeout_seconds = 60
 }
+
+if(timeout_seconds in String) {
+    timeout_seconds = Integer.decode(timeout_seconds)
+}
+
 //type check user defined parameters/bindings
-if(!(timeout_seconds instanceof Integer)) {
-    throw new Exception('PARAMETER ERROR: timeout_seconds must be a string.')
+if(!(timeout_seconds in Integer)) {
+    throw new Exception('PARAMETER ERROR: timeout_seconds must be an integer.')
 }
 
 Logger logger = Logger.getLogger('jenkins.instance.restart')
@@ -59,4 +64,4 @@ def thread = Thread.start {
     }
 }
 
-println "A safe restart has been scheduled.  See the Jenkins logs for restart status updates."
+println 'A safe restart has been scheduled.  See the Jenkins logs for restart status updates.  Logger is jenkins.instance.restart.'
