@@ -43,13 +43,11 @@ computer = node.computer
 launcher = node.launcher
 
 String checksum( def input ) {
-  def digest = java.security.MessageDigest.getInstance("SHA-256")
-  digest.update( input.bytes )
-  new BigInteger(1,digest.digest()).toString(16).padLeft(64, '0')
+    MessageDigest.getInstance('SHA-256').digest(input.bytes).encodeHex().toString()
 }
 
 String getJenkinsUrl() {
-  jenkins.rootUrl.trim().replaceAll('/$', '') as String
+    jenkins.rootUrl.trim().replaceAll('/$', '') as String
 }
 
 shell_script_template = '''#!/bin/bash
@@ -125,13 +123,13 @@ echo $! > "${AGENT_PID}"'''.replaceAll(Pattern.quote('$'), Matcher.quoteReplacem
 
 
 Map scriptBinding = [
-  jenkins_url: getJenkinsUrl(),
-  jenkins_home: node.remoteFS.trim(),
-  computer_url: computer.url.trim().replaceAll('/$', '') as String,
-  computer_secret: computer.jnlpMac.trim(),
-  java_opts: (launcher.vmargs)?:"",
-  jnlp_jar_sha: checksum("${getJenkinsUrl()}/jnlpJars/slave.jar".toURL())
-  ]
+    jenkins_url: getJenkinsUrl(),
+    jenkins_home: node.remoteFS.trim(),
+    computer_url: computer.url.trim().replaceAll('/$', '') as String,
+    computer_secret: computer.jnlpMac.trim(),
+    java_opts: (launcher.vmargs)?:"",
+    jnlp_jar_sha: checksum("${getJenkinsUrl()}/jnlpJars/slave.jar".toURL())
+]
 
 println (new SimpleTemplateEngine().createTemplate(shell_script_template).make(scriptBinding))
 null
