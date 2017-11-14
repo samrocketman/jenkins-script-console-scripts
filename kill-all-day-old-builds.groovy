@@ -45,28 +45,24 @@ Calendar rightNow = Calendar.getInstance()
 Jenkins.instance.getAllItems(Job.class).findAll { Job job ->
     job.isBuilding()
 }.collect { Job job ->
+    //find all matching items and return a list but if null then return an empty list
     job.builds.findAll { Run run ->
         run.isBuilding() && ((rightNow.getTimeInMillis() - run.getStartTimeInMillis()) > time_in_millis)
-    }
-}.each { List listOfRuns ->
-    if(listOfRuns) {
-        //the listOfRuns is not empty
-        listOfRuns.each { Run item ->
-            if(item instanceof WorkflowRun) {
-                WorkflowRun run = (WorkflowRun) item
-                //hard kill
-                run.doKill()
-                //release pipeline concurrency locks
-                StageStepExecution.exit(run)
-                println "Killed ${run}"
-            } else if(item instanceof FreeStyleBuild) {
-                FreeStyleBuild run = (FreeStyleBuild) item
-                run.executor.interrupt(Result.ABORTED)
-                println "Killed ${run}"
-            } else {
-                println "WARNING: Don't know how to handle ${item.class}"
-            }
-        }
+    } ?: []
+}.sum().each { Run item ->
+    if(item in WorkflowRun) {
+        WorkflowRun run = (WorkflowRun) item
+        //hard kill
+        run.doKill()
+        //release pipeline concurrency locks
+        StageStepExecution.exit(run)
+        println "Killed ${run}"
+    } else if(item in FreeStyleBuild) {
+        FreeStyleBuild run = (FreeStyleBuild) item
+        run.executor.interrupt(Result.ABORTED)
+        println "Killed ${run}"
+    } else {
+        println "WARNING: Don't know how to handle ${item.class}"
     }
 }
 
