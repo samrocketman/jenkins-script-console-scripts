@@ -32,9 +32,6 @@ THE SOFTWARE.
    https://github.com/samrocketman/jenkins-script-console-scripts/blob/master/disable-jenkins-cli.groovy
  */
 
-//import jenkins.*;
-//import jenkins.model.*;
-//import hudson.model.*;
 import jenkins.AgentProtocol
 import jenkins.model.Jenkins
 import hudson.model.RootAction
