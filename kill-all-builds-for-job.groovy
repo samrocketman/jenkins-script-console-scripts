@@ -35,17 +35,21 @@ if(!binding.hasVariable('projectFullName')) {
     projectFullName = 'folder/project'
 }
 
+if(dryRun in String) {
+    dryRun = (dryRun.toLowerCase() != 'false') as Boolean
+}
+
 //type check user defined parameters/bindings
-if(!(dryRun instanceof Boolean)) {
+if(!(dryRun in Boolean)) {
     throw new Exception('PARAMETER ERROR: dryRun must be a boolean.')
 }
-if(!(projectFullName instanceof String)) {
+if(!(projectFullName in String)) {
     throw new Exception('PARAMETER ERROR: projectFullName must be a string.')
 }
 
 Jenkins.instance.getItemByFullName(projectFullName).builds.each { Run item ->
     if(item.isBuilding()) {
-        if(item instanceof WorkflowRun) {
+        if(item in WorkflowRun) {
             WorkflowRun run = (WorkflowRun) item
             if(!dryRun) {
                 //hard kill
@@ -54,7 +58,7 @@ Jenkins.instance.getItemByFullName(projectFullName).builds.each { Run item ->
                 StageStepExecution.exit(run)
             }
             println "Killed ${run}"
-        } else if(item instanceof FreeStyleBuild) {
+        } else if(item in FreeStyleBuild) {
             FreeStyleBuild run = (FreeStyleBuild) item
             if(!dryRun) {
                 run.executor.interrupt(Result.ABORTED)
@@ -63,11 +67,6 @@ Jenkins.instance.getItemByFullName(projectFullName).builds.each { Run item ->
         } else {
             println "WARNING: Don't know how to handle ${item.class}"
         }
-    }
-}.each{ build ->
-    if(build.isBuilding()) {
-        build.doKill()
-        println "killed ${build}"
     }
 }
 
