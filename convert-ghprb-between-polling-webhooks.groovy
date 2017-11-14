@@ -31,6 +31,7 @@
  */
 
 import hudson.model.Job
+import hudson.triggers.Trigger
 import java.lang.reflect.Field
 import org.jenkinsci.plugins.ghprb.GhprbTrigger
 
@@ -38,29 +39,32 @@ import org.jenkinsci.plugins.ghprb.GhprbTrigger
 //false - convert from webhooks to polling
 pollToWebhooks = true
 cron_field = 'H/15 * * * *'
+dryRun = true
 
 if(!('ghprb' in Jenkins.instance.pluginManager.plugins*.shortName)) {
     throw new Exception('GitHub Pull-Request Builder Plugin is not installed.  This script has aborted.')
 }
 
-Jenkins.instance.getAllItems(Job.class).findAll { j ->
+Jenkins.instance.getAllItems(Job.class).findAll { Job j ->
     j.getTrigger(GhprbTrigger.class)
-}.each { j ->
-    //for this job which has GHPRB enabled do the following:
-    def trigger = j.getTrigger(GhprbTrigger.class)
-    //disable cron polling
-    Field cron_field = trigger.getClass().getDeclaredField('cron')
-    cron_field.setAccessible(true)
-    cron_field.set(trigger, (pollToWebhooks)? '' : cron_field)
-    //enable managing webhooks for the repository
-    Field useGitHubHooks_field = trigger.getClass().getDeclaredField('useGitHubHooks')
-    useGitHubHooks_field.setAccessible(true)
-    useGitHubHooks_field.set(trigger, pollToWebhooks)
-    //save the job configuration
-    j.save()
-    //start the trigger so webhooks are active in Jenkins and registered with the GitHub project via GitHub API
-    trigger.start(j, false)
-    println "${j.name} converted."
+}.each { Job j ->
+    if(!dryRun) {
+        //for this job which has GHPRB enabled do the following:
+        Trigger trigger = j.getTrigger(GhprbTrigger.class)
+        //disable cron polling
+        Field cron_field = trigger.getClass().getDeclaredField('cron')
+        cron_field.setAccessible(true)
+        cron_field.set(trigger, (pollToWebhooks)? '' : cron_field)
+        //enable managing webhooks for the repository
+        Field useGitHubHooks_field = trigger.getClass().getDeclaredField('useGitHubHooks')
+        useGitHubHooks_field.setAccessible(true)
+        useGitHubHooks_field.set(trigger, pollToWebhooks)
+        //save the job configuration
+        j.save()
+        //start the trigger so webhooks are active in Jenkins and registered with the GitHub project via GitHub API
+        trigger.start(j, false)
+    }
+    println "${(dryRun) ? 'DRYRUN: ' : ''}${j.name} converted."
 }
 //discard script console result output
 null
