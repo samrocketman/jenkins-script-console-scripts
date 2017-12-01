@@ -56,11 +56,20 @@ import org.acegisecurity.userdetails.UsernameNotFoundException
 if(!binding.hasVariable('writeToFile')) {
     writeToFile = false
 }
+if(!binding.hasVariable('includeCoreAccounts')) {
+    includeCoreAccounts = true
+}
 if(writeToFile in String) {
     writeToFile = ('true' == writeToFile.toLowerCase())
 }
+if(includeCoreAccounts in String) {
+    includeCoreAccounts = ('true' == includeCoreAccounts.toLowerCase())
+}
 if(!(writeToFile instanceof Boolean)) {
     throw new Exception('ERROR: writeToFile must be a boolean.')
+}
+if(!(includeCoreAccounts instanceof Boolean)) {
+    throw new Exception('ERROR: includeCoreAccounts must be a boolean.')
 }
 
 /**
@@ -93,18 +102,21 @@ class UserCSV {
         this.fullName = u.fullName ?: ''
         switch(id) {
             case 'admin':
-                this.notes << 'This built-in account is the first account created in the Jenkins 2.0 setup wizard when you set up Jenkins the first time.  This account should be deleted because it is a default Jenkins account.'
+                this.notes << 'This built-in account is the first account created in the Jenkins 2.0 setup wizard when you set up Jenkins the first time.'
+                this.notes << 'This account should be deleted because it is a default Jenkins account.'
                 break
             case 'anonymous':
-                this.notes << 'This core pseudo account is for users who are not authenticated with Jenkins a.k.a. all anonymous users.  It cannot be deleted.'
+                this.notes << 'This core pseudo account is for users who are not authenticated with Jenkins a.k.a. all anonymous users.'
                 coreAccount = true
                 break
             case 'authenticated':
-                this.notes << 'This core pseudo account is for any user who has authenticated with Jenkins a.k.a. all logged in users.  It cannot be deleted.'
+                this.notes << 'This core pseudo account is for any user who has authenticated with Jenkins a.k.a. all logged in users.'
                 coreAccount = true
                 break
         }
-        if(!coreAccount) {
+        if(coreAccount) {
+            this.notes << 'This account cannot be deleted.'
+        } else {
             try {
                 //for performance reasons, only try to impersonate a user once when this object is first instantiated
                 this.impersonate = u.impersonate()
@@ -239,7 +251,9 @@ if(binding.hasVariable('out') && binding.hasVariable('build') && writeToFile) {
 optionalWriter(outputFile) { writer ->
     writeLine(writer, UserCSV.getCSVHeader())
     User.all.flatten().sort().each { User u ->
-        writeLine(writer, new UserCSV(u).getCSV())
+        if(includeCoreAccounts || !(u.id in ['anonymous', 'authenticated'])) {
+            writeLine(writer, new UserCSV(u).getCSV())
+        }
     }
 }
 writeLine separator
