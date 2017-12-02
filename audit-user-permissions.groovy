@@ -167,7 +167,9 @@ class UserCSV {
                 item.properties.find {
                     it.class.simpleName == 'AuthorizationMatrixProperty'
                 }.with { item_auth ->
-                    item_auth.getGrantedPermissions().keySet().each { Permission p ->
+                    item_auth.getGrantedPermissions().keySet().findAll { Permission p ->
+                        !(displayPermission(p) in discovered_permissions)
+                    }.each { Permission p ->
                         if(item_auth.acl.hasPermission(this.impersonate, p)) {
                             discovered_permissions << displayPermission(p)
                         }
