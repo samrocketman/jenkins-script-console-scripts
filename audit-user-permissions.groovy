@@ -130,7 +130,7 @@ class UserCSV {
             }
         }
         this.global_permissions = this.getGlobalPermissions()
-        if(Jenkins.instance.authorizationStrategy.class.simpleName == 'ProjectMatrixAuthorizationStrategy') {
+        if(supportsItemPermissions()) {
             this.item_permissions = getItemPermissions()
         }
         if(this.global_permissions == 'No permissions' && this.item_permissions == 'No permissions' && !builtinAccount && !coreAccount) {
@@ -143,6 +143,9 @@ class UserCSV {
                 this.notes << "This user can trivially elevate themselves to ${this.displayPermission(admin)} because jobs can be configured to run on the master."
             }
         }
+    }
+    private static Boolean supportsItemPermissions() {
+        Jenkins.instance.authorizationStrategy.class.simpleName == 'ProjectMatrixAuthorizationStrategy'
     }
     private static String displayPermission(Permission p) {
         "${p.group.title}:${p.name}".toString()
@@ -203,7 +206,7 @@ class UserCSV {
             '"Notes"',
             '"Global Permissions"'
         ]
-        if(Jenkins.instance.authorizationStrategy.class.simpleName == 'ProjectMatrixAuthorizationStrategy') {
+        if(supportsItemPermissions()) {
             csvList << '"Additional permissions granted within folders or jobs"'
         }
         csvList.join(', ')
@@ -216,7 +219,7 @@ class UserCSV {
             "\"${this.notes.join('  ')}\"",
             "\"${this.global_permissions}\""
         ]
-        if(Jenkins.instance.authorizationStrategy.class.simpleName == 'ProjectMatrixAuthorizationStrategy') {
+        if(supportsItemPermissions()) {
             csvList << "\"${this.item_permissions}\""
         }
         csvList.join(', ')
