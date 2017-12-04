@@ -107,13 +107,12 @@ class UserCSV {
                 break
             case 'anonymous':
                 this.notes << 'This core pseudo account is for users who are not authenticated with Jenkins a.k.a. all anonymous users.'
-                coreAccount = true
                 break
             case 'authenticated':
                 this.notes << 'This core pseudo account is for any user who has authenticated with Jenkins a.k.a. all logged in users.'
-                coreAccount = true
                 break
         }
+        this.coreAccount = (id in ['anonymous', 'authenticated']) as Boolean
         if(coreAccount) {
             this.notes << 'This account cannot be deleted.'
         } else {
@@ -190,25 +189,37 @@ class UserCSV {
             displayPermission(admin)
         } else {
             permissions.findAll { Permission p ->
-                this.acl.hasPermission(this.impersonate, p)
+                p != admin && this.acl.hasPermission(this.impersonate, p)
             }.collect {
                 displayPermission(it)
             }.join(',') ?: this.global_permissions
         }
     }
     public static String getCSVHeader() {
+        List<String> csvList = [
+            'User',
+            '"Full Name"',
+            'Email',
+            '"Notes"',
+            '"Global Permissions"'
+        ]
         if(Jenkins.instance.authorizationStrategy.class.simpleName == 'ProjectMatrixAuthorizationStrategy') {
-            'User, "Full Name", Email, "Notes", "Global Permissions", "Additional permissions granted within folders or jobs"'
-        } else {
-            'User, "Full Name", Email, "Notes", "Global Permissions"'
+            csvList << '"Additional permissions granted within folders or jobs"'
         }
+        csvList.join(', ')
     }
     public String getCSV() {
+        List<String> csvList = [
+            this.id,
+            "\"${this.fullName}\"",
+            this.email,
+            "\"${this.notes.join('  ')}\"",
+            "\"${this.global_permissions}\""
+        ]
         if(Jenkins.instance.authorizationStrategy.class.simpleName == 'ProjectMatrixAuthorizationStrategy') {
-            "${this.id}, \"${this.fullName}\", ${this.email}, \"${this.notes.join('  ')}\", \"${this.global_permissions}\", \"${this.item_permissions}\""
-        } else {
-            "${this.id}, \"${this.fullName}\", ${this.email}, \"${this.notes.join('  ')}\", \"${this.global_permissions}\""
+            csvList << "\"${this.item_permissions}\""
         }
+        csvList.join(', ')
     }
 }
 
@@ -252,7 +263,7 @@ if(binding.hasVariable('out') && binding.hasVariable('build') && writeToFile) {
 }
 optionalWriter(outputFile) { writer ->
     writeLine(writer, UserCSV.getCSVHeader())
-    User.all.flatten().sort().each { User u ->
+    User.all.each { User u ->
         if(includeCoreAccounts || !(u.id in ['anonymous', 'authenticated'])) {
             writeLine(writer, new UserCSV(u).getCSV())
         }
