@@ -56,7 +56,7 @@ String remote_jenkins_cli_script = 'https://raw.githubusercontent.com/samrocketm
 String local_jenkins_cli_script = "${Jenkins.instance.root}/init.groovy.d/disable-jenkins-cli.groovy"
 downloadFile(remote_jenkins_cli_script, local_jenkins_cli_script)
 new File(local_jenkins_cli_script).with { f ->
-    if(sha256sum(f) == '06defb6916c7b481bb48a34e96a2752de6bffc52e10990dce82be74076e037a4') {
+    if(sha256sum(f) == 'ce649b6dc15837d7248cbf5ade057718aedfcbbe1188e25e7ee3b2b259401cb4') {
         println "Installed ${local_jenkins_cli_script} (patch persists on Jenkins restart)."
         try {
             evaluate(f)
