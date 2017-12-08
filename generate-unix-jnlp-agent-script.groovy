@@ -24,6 +24,7 @@
  */
 
 import groovy.text.SimpleTemplateEngine
+import java.security.MessageDigest
 import java.util.regex.Matcher
 import java.util.regex.Pattern
 
