@@ -19,14 +19,16 @@
     CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 /*
-   Disables all FreeStyle Jenkins jobs except for a FreeStyle job named
-   "_jervis_generator".
+   Disables all FreeStyle and MatrixProject Jenkins jobs except for a FreeStyle
+   job named "_jervis_generator".
  */
+import hudson.matrix.MatrixProject
 import hudson.model.FreeStyleProject
 import hudson.model.Job
 import jenkins.model.Jenkins
 
 Jenkins.instance.getAllItems(Job.class).findAll { Job j ->
+    ( j in FreeStyleProject || j in MatrixProject ) &&
     !j.isDisabled() && j.fullName != '_jervis_generator'
 }.each { Job j ->
     j.disabled = true
