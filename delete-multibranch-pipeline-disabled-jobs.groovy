@@ -38,12 +38,25 @@
 import hudson.model.Cause.UserIdCause
 import hudson.model.Item
 import hudson.model.Job
+import hudson.model.ParametersAction
 import hudson.model.User
 import hudson.security.AccessDeniedException2
 import jenkins.model.Jenkins
 import org.jenkinsci.plugins.github_branch_source.PullRequestSCMHead
 import org.jenkinsci.plugins.workflow.multibranch.BranchJobProperty
 import org.jenkinsci.plugins.workflow.multibranch.WorkflowMultiBranchProject
+
+
+/*
+   User configurable options.  If using a Groovy Job to execute this script,
+   then don't bother customizing these values.  Instead, add the following
+   parameters to the job.
+
+   - cleanup_all_jobs (boolean parameter)
+   - job_full_name (string parameter)
+   - include_pull_requests (boolean parameter)
+   - dry_run (boolean parameter)
+ */
 
 
 //will delete disabled branches over all multibranch pipeline jobs in Jenkins
@@ -56,25 +69,24 @@ boolean includePullRequests = false
 boolean dryRun = true
 
 
-//non-user variables
-isGroovyJob = binding.hasVariable('out')
+/*
+   Helper Functions
+ */
 
-if(isGroovyJob) {
-    //authenticate as the user calling the build so appropriate permissions apply
-    Jenkins.get().ACL.impersonate(User.get(build.getCause(UserIdCause.class).getUserId()).impersonate())
-}
 
 boolean hasDeletePermission(Item item) {
     item.hasPermission(Item.DELETE)
 }
 
+
 void message(String message) {
     if(isGroovyJob) {
-        out.println message
+        out?.println message
     } else {
         println message
     }
 }
+
 
 boolean isPullRequest(Job job) {
 	BranchJobProperty prop
@@ -85,15 +97,54 @@ boolean isPullRequest(Job job) {
 	job && prop.branch && prop.branch.head && (prop.branch.head in PullRequestSCMHead)
 }
 
+
 void deleteDisabledJobs(WorkflowMultiBranchProject project, boolean includePullRequests = false, boolean dryRun = true) {
 	project.items.findAll { Job j ->
 		j.disabled && (includePullRequests || !isPullRequest(j))
 	}.each { Job j ->
-		message "${(dryRun)? 'DRYRUN: ' : ''}Deleted ${project.fullName} ${isPullRequest(j)? 'pull request' : 'branch'} ${j.name}"
+		message "${(dryRun)? 'DRYRUN: ' : ''}Deleted ${project.fullName} ${isPullRequest(j)? 'pull request' : 'branch'} ${j.name} job."
 		if(!dryRun) {
 			j.delete()
 		}
 	}
+}
+
+
+def getJobParameter(String parameter, def defaultValue) {
+    if(!isGroovyJob) {
+        return defaultValue
+    }
+    def parameterValue = build?.actions.find {
+        it in ParametersAction
+    }?.parameters.find {
+        it.name == parameter
+    }?.value
+    if((defaultValue in String) && (parameterValue in Boolean)) {
+        'false' != parameterValue
+    }
+    else {
+        parameterValue.asType(defaultValue.getClass())
+    }
+}
+
+
+/*
+   Main execution
+ */
+
+
+//bindings
+isGroovyJob = !(false in ['build', 'launcher', 'listener', 'out'].collect { binding.hasVariable(it) })
+
+if(isGroovyJob) {
+    //authenticate as the user calling the build so appropriate permissions apply
+    Jenkins.get().ACL.impersonate(User.get(build.getCause(UserIdCause.class).getUserId()).impersonate())
+
+    //get parameters from the groovy job
+    cleanupAllJobs = getJobParameter('cleanup_all_jobs', cleanupAllJobs)
+    jobFullName = getJobParameter('job_full_name', jobFullName)
+    includePullRequests = getJobParameter('include_pull_requests', includePullRequests)
+    dryRun = getJobParameter('dry_run', dryRun)
 }
 
 if(dryRun) {
