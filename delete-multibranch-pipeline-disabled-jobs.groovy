@@ -26,16 +26,25 @@
      - Dry run to see what would be deleted without modifying Jenkins.
      - Clean up all jobs in Jenkins or a specific job.
      - Optionally include deleting pull request jobs.
+     - Can be a run from a Groovy job or from the Script console.
+     - If run from a Groovy job, permissions are checked against the user
+       building the job giving flexibility to expose this script in a self
+       service manner.
 
 
    FreeStyle job named "_jervis_generator".
  */
 
+import hudson.model.Cause.UserIdCause
+import hudson.model.Item
 import hudson.model.Job
+import hudson.model.User
+import hudson.security.AccessDeniedException2
 import jenkins.model.Jenkins
 import org.jenkinsci.plugins.github_branch_source.PullRequestSCMHead
 import org.jenkinsci.plugins.workflow.multibranch.BranchJobProperty
 import org.jenkinsci.plugins.workflow.multibranch.WorkflowMultiBranchProject
+
 
 //will delete disabled branches over all multibranch pipeline jobs in Jenkins
 boolean cleanupAllJobs = false
@@ -45,6 +54,27 @@ String jobFullName = 'samrocketman/jervis-example-project'
 boolean includePullRequests = false
 //pretend to delete but don't actually delete, useful to see what would be deleted without modifying Jenkins
 boolean dryRun = true
+
+
+//non-user variables
+isGroovyJob = binding.hasVariable('out')
+
+if(isGroovyJob) {
+    //authenticate as the user calling the build so appropriate permissions apply
+    Jenkins.get().ACL.impersonate(User.get(build.getCause(UserIdCause.class).getUserId()).impersonate())
+}
+
+boolean hasDeletePermission(Item item) {
+    item.hasPermission(Item.DELETE)
+}
+
+void message(String message) {
+    if(isGroovyJob) {
+        out.println message
+    } else {
+        println message
+    }
+}
 
 boolean isPullRequest(Job job) {
 	BranchJobProperty prop
@@ -59,7 +89,7 @@ void deleteDisabledJobs(WorkflowMultiBranchProject project, boolean includePullR
 	project.items.findAll { Job j ->
 		j.disabled && (includePullRequests || !isPullRequest(j))
 	}.each { Job j ->
-		println "${(dryRun)? 'DRYRUN: ' : ''}Deleted ${project.fullName} ${isPullRequest(j)? 'pull request' : 'branch'} ${j.name}"
+		message "${(dryRun)? 'DRYRUN: ' : ''}Deleted ${project.fullName} ${isPullRequest(j)? 'pull request' : 'branch'} ${j.name}"
 		if(!dryRun) {
 			j.delete()
 		}
@@ -67,22 +97,27 @@ void deleteDisabledJobs(WorkflowMultiBranchProject project, boolean includePullR
 }
 
 if(dryRun) {
-	println 'NOTE: DRYRUN mode does not make any modifications to Jenkins.'
+	message 'NOTE: DRYRUN mode does not make any modifications to Jenkins.'
 }
 
 if(cleanupAllJobs) {
-	println "NOTE: iterating across all multibranch pipelines in Jenkins to clean up branches${(includePullRequests)? ' and pull requests' : ''}."
-	Jenkins.instance.getAllItems(WorkflowMultiBranchProject.class).each { WorkflowMultiBranchProject project ->
+	message "NOTE: iterating across all multibranch pipelines in Jenkins to clean up branches${(includePullRequests)? ' and pull requests' : ''}."
+	Jenkins.get().getAllItems(WorkflowMultiBranchProject.class).findAll { WorkflowMultiBranchProject project ->
+        hasDeletePermission(project)
+    }.each { WorkflowMultiBranchProject project ->
 		deleteDisabledJobs(project, includePullRequests, dryRun)
 	}
 }
 else {
-	println "NOTE: attempting to clean up specific job ${jobFullName} to clean up branches${(includePullRequests)? ' and pull requests' : ''}."
+	message "NOTE: attempting to clean up specific job ${jobFullName} to clean up branches${(includePullRequests)? ' and pull requests' : ''}."
 	if(jobFullName) {
-		def project = Jenkins.instance.getItemByFullName(jobFullName)
+		def project = Jenkins.get().getItemByFullName(jobFullName)
 		if(!project || !(project in WorkflowMultiBranchProject)) {
 			throw new RuntimeException('ERROR: Job is not a multibranch pipeline project.  This script only works on multibranch pipelines.')
 		}
+        if(!hasDeletePermission(project)) {
+            throw new AccessDeniedException2(Jenkins.get().authentication, Item.DELETE)
+        }
 		deleteDisabledJobs(project, includePullRequests, dryRun)
 	}
 	else {
