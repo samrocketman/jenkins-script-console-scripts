@@ -94,7 +94,7 @@ boolean isPullRequest(Job job) {
 		prop = job.getProperty(BranchJobProperty)
 	}
 	//check if the job is a pull request
-	job && prop.branch && prop.branch.head && (prop.branch.head in PullRequestSCMHead)
+	job && (prop?.branch?.head in PullRequestSCMHead)
 }
 
 
