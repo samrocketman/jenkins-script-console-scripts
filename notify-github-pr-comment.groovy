@@ -53,7 +53,7 @@ Integer findCommentIdByUser(String credential, String repository, String pr_numb
     }?.id ?: 0
 }
 
-void postGHPRComment(String credential, String repository, String pr_number, String message, int comment_id = 0) {
+void postGHPRComment(String credential, String repository, String pr_number, String message, Integer comment_id = 0) {
 	Secret gh_token = getStringCredential(credential)
 	String method = 'POST'
 	Map data = [
