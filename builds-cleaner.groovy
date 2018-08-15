@@ -11,7 +11,7 @@
 import jenkins.model.Jenkins
 import hudson.model.Job
 
-def MAX_BUILDS = 5 // max builds to keep
+int MAX_BUILDS = 5 // max builds to keep
 
 Jenkins.instance.allItems.findAll { it instanceof hudson.model.Job }.each { job ->
 
