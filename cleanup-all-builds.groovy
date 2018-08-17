@@ -37,7 +37,7 @@ import hudson.model.Job
 
 int MAX_BUILDS = 5 // max builds to keep
 
-Jenkins.instance.allItems.findAll { it instanceof hudson.model.Job }.each { job ->
+Jenkins.instance.getAllItems(Job.class).each { job ->
 
     job.builds.drop(MAX_BUILDS).findAll {
 
