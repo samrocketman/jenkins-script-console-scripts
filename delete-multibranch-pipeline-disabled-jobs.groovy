@@ -59,25 +59,25 @@ import org.jenkinsci.plugins.workflow.multibranch.WorkflowMultiBranchProject
  */
 
 
-//will delete disabled branches over all multibranch pipeline jobs in Jenkins
+// will delete disabled branches over all multibranch pipeline jobs in Jenkins
 boolean cleanupAllJobs = false
-//ignored if cleaning up all jobs
-String jobFullName = 'samrocketman/jervis-example-project'
-//removes disabled (closed) pull requests as well
-boolean includePullRequests = false
-//pretend to delete but don't actually delete, useful to see what would be deleted without modifying Jenkins
-boolean dryRun = true
 
+// ignored if cleaning up all jobs
+String jobFullName = 'samrocketman/jervis-example-project'
+
+// removes disabled (closed) pull requests as well
+boolean includePullRequests = false
+
+// pretend to delete but don't actually delete, useful to see what would be deleted without modifying Jenkins
+boolean dryRun = true
 
 /*
    Helper Functions
  */
 
-
 boolean hasDeletePermission(Item item) {
     item.hasPermission(Item.DELETE)
 }
-
 
 void message(String message) {
     if(isGroovyJob) {
@@ -87,7 +87,6 @@ void message(String message) {
     }
 }
 
-
 boolean isPullRequest(Job job) {
     BranchJobProperty prop
     if(job) {
@@ -96,7 +95,6 @@ boolean isPullRequest(Job job) {
     //check if the job is a pull request
     job && (prop?.branch?.head in PullRequestSCMHead)
 }
-
 
 void deleteDisabledJobs(WorkflowMultiBranchProject project, boolean includePullRequests = false, boolean dryRun = true) {
     project.items.findAll { Job j ->
@@ -108,7 +106,6 @@ void deleteDisabledJobs(WorkflowMultiBranchProject project, boolean includePullR
         }
     }
 }
-
 
 def getJobParameter(String parameter, def defaultValue) {
     if(!isGroovyJob) {
@@ -127,11 +124,9 @@ def getJobParameter(String parameter, def defaultValue) {
     }
 }
 
-
 /*
    Main execution
  */
-
 
 //bindings
 isGroovyJob = !(false in ['build', 'launcher', 'listener', 'out'].collect { binding.hasVariable(it) })
