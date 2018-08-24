@@ -19,7 +19,7 @@
     CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 /*
-   Delete all abanded branhes and closed pull requests for multibranch pipeline jobs.
+   Delete all abandoned branches and closed pull requests for multibranch pipeline jobs.
 
    Features:
      - Safest options defined by default to prevent accidental modification.
