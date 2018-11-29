@@ -35,6 +35,6 @@ String agent_label = 'some-agent'
 
 Label agent = (Jenkins.instance.getLabel(agent_label)) ?: (new LabelAtom(agent_label))
 agent.nodes*.computer.with {
-	it*.doDoDelete()
-	println "${it.size()} agents deleted."
+    it*.doDoDelete()
+    println "${it.size()} agents deleted."
 }

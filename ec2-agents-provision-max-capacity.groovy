@@ -47,16 +47,16 @@ String agent_label = 'aws-agent'
 Label agent = (Jenkins.instance.getLabel(agent_label)) ?: (new LabelAtom(agent_label))
 int current_agents = agent.nodes.size()
 Jenkins.instance.clouds.findAll {
-	it in AmazonEC2Cloud
+    it in AmazonEC2Cloud
 }.each { AmazonEC2Cloud cloud ->
-	if(cloud.canProvision(agent)) {
+    if(cloud.canProvision(agent)) {
         SlaveTemplate t = cloud.getTemplate(agent)
         List<Node> nodes = t.provision((t.instanceCap - current_agents), EnumSet.of(SlaveTemplate.ProvisionOptions.FORCE_CREATE))
         nodes.each { node ->
             Jenkins.instance.addNode(node)
         }
         println "Provisioned ${nodes.size()} new agents."
-	}
+    }
 }
 
 null
