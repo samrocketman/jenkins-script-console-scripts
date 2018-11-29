@@ -23,7 +23,7 @@
 
    WARNING this script will permanently delete agents including all settings
    associated with an agent.  If the agent is associated with a Jenkins Cloud
-   then PHYSICAL INFRASTRUCTURE WILL ALSO LIKELY BE DELETED.
+   then INFRASTRUCTURE WILL ALSO LIKELY BE DELETED.
  */
 
 import hudson.model.Label
