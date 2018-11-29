@@ -38,6 +38,7 @@ import hudson.model.Label
 import hudson.model.Node
 import hudson.model.labels.LabelAtom
 import hudson.plugins.ec2.AmazonEC2Cloud
+import hudson.plugins.ec2.EC2AbstractSlave
 import hudson.plugins.ec2.SlaveTemplate
 import jenkins.model.Jenkins
 
@@ -45,18 +46,26 @@ import jenkins.model.Jenkins
 String agent_label = 'aws-agent'
 
 Label agent = (Jenkins.instance.getLabel(agent_label)) ?: (new LabelAtom(agent_label))
-int current_agents = agent.nodes.size()
-Jenkins.instance.clouds.findAll {
-    it in AmazonEC2Cloud
+Jenkins.instance.clouds.findAll { cloud ->
+    int current_agents = agent.nodes.findAll { node ->
+        node in EC2AbstractSlave &&
+        node.cloud.is(cloud)
+    }.size()
+
+    (cloud in AmazonEC2Cloud) &&
+    cloud.canProvision(agent) &&
+    (cloud.getTemplate(agent).instanceCap - current_agents) > 0
 }.each { AmazonEC2Cloud cloud ->
-    if(cloud.canProvision(agent)) {
-        SlaveTemplate t = cloud.getTemplate(agent)
-        List<Node> nodes = t.provision((t.instanceCap - current_agents), EnumSet.of(SlaveTemplate.ProvisionOptions.FORCE_CREATE))
-        nodes.each { node ->
-            Jenkins.instance.addNode(node)
-        }
-        println "Provisioned ${nodes.size()} new agents."
+    SlaveTemplate t = cloud.getTemplate(agent)
+    int desired_agents = t.instanceCap - agent.nodes.findAll {
+        it in EC2AbstractSlave &&
+        it.cloud.is(cloud)
+    }.size()
+    List<Node> nodes = t.provision(desired_agents, EnumSet.of(SlaveTemplate.ProvisionOptions.FORCE_CREATE))
+    nodes.each { node ->
+        Jenkins.instance.addNode(node)
     }
-}
+    println "Provisioned ${nodes.size()} new agents."
+} ?: println('No agents provisioned.')
 
 null
