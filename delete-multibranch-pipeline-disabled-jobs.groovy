@@ -124,6 +124,22 @@ def getJobParameter(String parameter, def defaultValue) {
     }
 }
 
+def tryImpersonate(Boolean groovyJob, Closure body) {
+    if(groovyJob) {
+        Jenkins.getInstance().ACL.as(User.get(build.getCause(UserIdCause.class).getUserId())).with { ctx ->
+            try {
+                body(ctx)
+            }
+            finally {
+                ctx.close()
+            }
+        }
+    }
+    else {
+        body(null)
+    }
+}
+
 /*
    Main execution
  */
@@ -131,43 +147,45 @@ def getJobParameter(String parameter, def defaultValue) {
 //bindings
 isGroovyJob = !(false in ['build', 'launcher', 'listener', 'out'].collect { binding.hasVariable(it) })
 
-if(isGroovyJob) {
-    //authenticate as the user calling the build so appropriate permissions apply
-    Jenkins.get().ACL.impersonate(User.get(build.getCause(UserIdCause.class).getUserId()).impersonate())
+tryImpersonate(isGroovyJob) {
+    if(isGroovyJob) {
+        //authenticated as the user calling the build so appropriate permissions apply
+        println "Impersonated ${Jenkins.instance.authentication.principal}"
 
-    //get parameters from the groovy job
-    cleanupAllJobs = getJobParameter('cleanup_all_jobs', cleanupAllJobs)
-    jobFullName = getJobParameter('job_full_name', jobFullName)
-    includePullRequests = getJobParameter('include_pull_requests', includePullRequests)
-    dryRun = getJobParameter('dry_run', dryRun)
-}
-
-if(dryRun) {
-    message 'NOTE: DRYRUN mode does not make any modifications to Jenkins.'
-}
-
-if(cleanupAllJobs) {
-    message "NOTE: iterating across all multibranch pipelines in Jenkins to clean up branches${(includePullRequests)? ' and pull requests' : ''}."
-    Jenkins.get().getAllItems(WorkflowMultiBranchProject.class).findAll { WorkflowMultiBranchProject project ->
-        hasDeletePermission(project)
-    }.each { WorkflowMultiBranchProject project ->
-        deleteDisabledJobs(project, includePullRequests, dryRun)
+        //get parameters from the groovy job
+        cleanupAllJobs = getJobParameter('cleanup_all_jobs', cleanupAllJobs)
+        jobFullName = getJobParameter('job_full_name', jobFullName)
+        includePullRequests = getJobParameter('include_pull_requests', includePullRequests)
+        dryRun = getJobParameter('dry_run', dryRun)
     }
-}
-else {
-    message "NOTE: attempting to clean up specific job ${jobFullName} to clean up branches${(includePullRequests)? ' and pull requests' : ''}."
-    if(jobFullName) {
-        def project = Jenkins.get().getItemByFullName(jobFullName)
-        if(!project || !(project in WorkflowMultiBranchProject)) {
-            throw new RuntimeException('ERROR: Job is not a multibranch pipeline project.  This script only works on multibranch pipelines.')
+
+    if(dryRun) {
+        message 'NOTE: DRYRUN mode does not make any modifications to Jenkins.'
+    }
+
+    if(cleanupAllJobs) {
+        message "NOTE: iterating across all multibranch pipelines in Jenkins to clean up branches${(includePullRequests)? ' and pull requests' : ''}."
+        Jenkins.getInstance().getAllItems(WorkflowMultiBranchProject.class).findAll { WorkflowMultiBranchProject project ->
+            hasDeletePermission(project)
+        }.each { WorkflowMultiBranchProject project ->
+            deleteDisabledJobs(project, includePullRequests, dryRun)
         }
-        if(!hasDeletePermission(project)) {
-            throw new AccessDeniedException2(Jenkins.get().authentication, Item.DELETE)
-        }
-        deleteDisabledJobs(project, includePullRequests, dryRun)
     }
     else {
-        throw new RuntimeException('ERROR: Job full name not specified.  There is nothing to clean up so this is an error.')
+        message "NOTE: attempting to clean up specific job ${jobFullName} to clean up branches${(includePullRequests)? ' and pull requests' : ''}."
+        if(jobFullName) {
+            def project = Jenkins.get().getItemByFullName(jobFullName)
+            if(!project || !(project in WorkflowMultiBranchProject)) {
+                throw new RuntimeException('ERROR: Job is not a multibranch pipeline project.  This script only works on multibranch pipelines.')
+            }
+            if(!hasDeletePermission(project)) {
+                throw new AccessDeniedException2(Jenkins.get().authentication, Item.DELETE)
+            }
+            deleteDisabledJobs(project, includePullRequests, dryRun)
+        }
+        else {
+            throw new RuntimeException('ERROR: Job full name not specified.  There is nothing to clean up so this is an error.')
+        }
     }
 }
 
