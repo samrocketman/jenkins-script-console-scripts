@@ -19,13 +19,23 @@
     CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 /**
-  Print the version of Jenkins and all plugins.  This is useful for filling out
-  environment in Jenkins issues.
- */
+  This script searches all jobs in a Jenkins instance and regenerates them by
+  building the Jervis generator job with parameters.  Useful for migrating Job
+  DSL script changes as Jenkins is upgraded or Jervis is changed.
+  */
+import hudson.model.ParametersAction
+import hudson.model.StringParameterValue
+import org.jenkinsci.plugins.github_branch_source.GitHubSCMSource
+import org.jenkinsci.plugins.workflow.multibranch.WorkflowMultiBranchProject
 
-import jenkins.model.Jenkins
+def generator_job = Jenkins.instance.getItemByFullName('_jervis_generator')
 
-println "Jenkins version ${Jenkins.instance.version}"
-println Jenkins.instance.pluginManager.plugins.sort { it.shortName }.collect { p ->
-    "${p.shortName} ${p.version}"
-}.join('\n')
+Jenkins.instance.getAllItems(WorkflowMultiBranchProject).collect { project ->
+    project.getSCMSources().find { source ->
+        source in GitHubSCMSource
+    }.getRepositoryUrl() -~ '^https://github.com/'
+}.sort().unique().each { String project ->
+    def actions = new ParametersAction([new StringParameterValue('project', project)])
+    generator_job.scheduleBuild2(0, actions)
+    println "Scheduled project ${project}."
+}

@@ -18,14 +18,18 @@
     IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
     CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
-/**
-  Print the version of Jenkins and all plugins.  This is useful for filling out
-  environment in Jenkins issues.
+/*
+   Sometimes builds do not release locks via the pipeline lock step.  This
+   script iterates all locks and forces them to be released if a build has a
+   lock but is no longer running.
  */
-
 import jenkins.model.Jenkins
 
-println "Jenkins version ${Jenkins.instance.version}"
-println Jenkins.instance.pluginManager.plugins.sort { it.shortName }.collect { p ->
-    "${p.shortName} ${p.version}"
-}.join('\n')
+def lockManager = Jenkins.instance.getExtensionList('org.jenkins.plugins.lockableresources.LockableResourcesManager')[0]
+
+lockManager.resources.findAll { lock ->
+    lock.isLocked() && !lock.build.isBuilding()
+}.each { lock ->
+    println "Resetting stale lock ${lock}"
+    lock.reset()
+}

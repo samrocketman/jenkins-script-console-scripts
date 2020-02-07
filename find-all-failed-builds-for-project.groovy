@@ -19,13 +19,17 @@
     CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 /**
-  Print the version of Jenkins and all plugins.  This is useful for filling out
-  environment in Jenkins issues.
- */
+  Searches for all failed builds in a particular project.  Useful for when the
+  build history is not visible due to the amount of builds.
+  */
+import hudson.model.Result
+import hudson.model.ParametersAction
 
-import jenkins.model.Jenkins
+Jenkins.instance.getItem('_jervis_generator').builds.findAll {
+  //it.number > 715 &&
+  it.result == Result.FAILURE
+}.each {
+  println "${it.getAction(ParametersAction).parameters.first().value}\n    ${it.absoluteUrl}"
+}
 
-println "Jenkins version ${Jenkins.instance.version}"
-println Jenkins.instance.pluginManager.plugins.sort { it.shortName }.collect { p ->
-    "${p.shortName} ${p.version}"
-}.join('\n')
+null

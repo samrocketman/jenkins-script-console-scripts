@@ -18,14 +18,38 @@
     IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
     CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
-/**
-  Print the version of Jenkins and all plugins.  This is useful for filling out
-  environment in Jenkins issues.
+/*
+   Delete branch and tag builds older than 120 days on a Jenkins instance using
+   multibranch pipelines inside of folders.
  */
-
+import com.cloudbees.hudson.plugins.folder.Folder
+import java.util.Date
 import jenkins.model.Jenkins
+import org.jenkinsci.plugins.workflow.job.WorkflowJob
+import org.jenkinsci.plugins.workflow.job.WorkflowRun
+import org.jenkinsci.plugins.workflow.multibranch.WorkflowMultiBranchProject
 
-println "Jenkins version ${Jenkins.instance.version}"
-println Jenkins.instance.pluginManager.plugins.sort { it.shortName }.collect { p ->
-    "${p.shortName} ${p.version}"
-}.join('\n')
+long DAY_IN_MS = 1000 * 60 * 60 * 24
+int days = 120
+Date fourMonthsAgo = new Date(System.currentTimeMillis() - (days * DAY_IN_MS))
+
+
+Jenkins.instance.getAllItems(WorkflowJob).findAll {
+    it?.parent in WorkflowMultiBranchProject &&
+    it?.parent?.parent in Folder
+}.findAll { WorkflowJob job ->
+    !job.name.startsWith('PR-')
+}.each { WorkflowJob job ->
+    job?.builds?.each { WorkflowRun build ->
+        if((new Date(build.startTimeInMillis)).before(fourMonthsAgo)) {
+            println "Deleting ${days} day ${build}"
+            build.delete()
+        }
+    }
+    if(!job?.builds) {
+        println "Delete empty ${job}"
+        job.delete()
+    }
+}
+
+null

@@ -18,14 +18,22 @@
     IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
     CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
-/**
-  Print the version of Jenkins and all plugins.  This is useful for filling out
-  environment in Jenkins issues.
- */
+/*
+  This script is designed to iterate across all users in a Jenkins installation
+  and automatically delete their account if they're disabled the authentication
+  realm.
+*/
 
+import hudson.model.User
 import jenkins.model.Jenkins
+import org.acegisecurity.userdetails.UsernameNotFoundException
 
-println "Jenkins version ${Jenkins.instance.version}"
-println Jenkins.instance.pluginManager.plugins.sort { it.shortName }.collect { p ->
-    "${p.shortName} ${p.version}"
-}.join('\n')
+User.all.each { u ->
+    try {
+        u.impersonate()
+    } catch(UsernameNotFoundException e) {
+        println "${u.id}: Deleting disabled account from ${Jenkins.instance.rootUrl}."
+        u.delete()
+    }
+}
+null
