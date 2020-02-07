@@ -88,7 +88,7 @@ Jenkins.instance.getAllItems(Job.class).each { Job job ->
         if(formatJervis) {
             projects << "${job.fullName.split('/')[0]}/${job.displayName.split(' ')[0]}"
         } else {
-            projects << i.fullName
+            projects << job.fullName
         }
     }
 }
