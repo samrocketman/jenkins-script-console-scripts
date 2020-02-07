@@ -1,3 +1,10 @@
+/**
+    Author: https://github.com/ranma2913
+    Warning: This code is unlicensed.
+    See https://github.com/samrocketman/jenkins-script-console-scripts/blob/master/user-contributed-examples/README.md
+  */
+
+
 import hudson.*
 import hudson.model.*
 import jenkins.*
@@ -17,16 +24,17 @@ def jobsFoundMatchingSearch = 0
 def jobsFoundInClassesToAbort = 0
 def jobsAborted = 0
 
-println("************************************************** START ***************************************************************" +
-        "\njobNameSearchParam: '${jobNameSearchParam}'" +
-        "\nabortJobs: ${abortJobs}" +
-        "\nclassesToAbort: ${classesToAbort}" +
-        "\njobsFoundMatchingSearch: ${jobsFoundMatchingSearch}" +
-        "\njobsFoundInClassesToAbort: ${jobsFoundInClassesToAbort}" +
-        "\njobsAborted: ${jobsAborted}"
-)
-println("****************************************** Processing Started **********************************************************" +
-        "\nSearching through AbstractItems...\n")
+println("""
+************************************************** START ***************************************************************" +
+jobNameSearchParam: '${jobNameSearchParam}'
+abortJobs: ${abortJobs}
+classesToAbort: ${classesToAbort}
+jobsFoundMatchingSearch: ${jobsFoundMatchingSearch}
+jobsFoundInClassesToAbort: ${jobsFoundInClassesToAbort}
+jobsAborted: ${jobsAborted}
+""".trim())
+println("""****************************************** Processing Started **********************************************************
+Searching through AbstractItems...""")
 
 //JavaDoc: https://javadoc.jenkins-ci.org/hudson/model/AbstractItem.html
 Jenkins.instance.getAllItems(AbstractItem.class).each { item ->
@@ -40,22 +48,22 @@ Jenkins.instance.getAllItems(AbstractItem.class).each { item ->
             println("WorkflowJob RunMap.size(${workflowJob._getRuns().size()}):")
             //JavaDoc: https://javadoc.jenkins.io/plugin/workflow-job/org/jenkinsci/plugins/workflow/job/WorkflowRun.html
             workflowJob._getRuns().each { int runId, WorkflowRun build ->
-                println("\t- runId: ${runId}" +
-                        "\n\t  BuildStatusSumamry.message: ${build.getBuildStatusSummary().message}" +
-                        "\n\t  Build.hasAllowKill(): ${build.hasAllowKill()}" +
-                        "\n\t  Build.hasAllowTerm(): ${build.hasAllowTerm()}" +
-                        "\n\t  Build.hasntStartedYet(): ${build.hasntStartedYet()}" +
-                        "\n\t  Build.isBuilding(): ${build.isBuilding()}" +
-                        "\n\t  Build.isInProgress(): ${build.isInProgress()}" +
-                        "\n\t  Build.isLogUpdated(): ${build.isLogUpdated()}" +
-                        "\n\t  build: ${build}\n")
+                println("""|\t- runId: ${runId}
+                        |\t  BuildStatusSumamry.message: ${build.getBuildStatusSummary().message}
+                        |\t  Build.hasAllowKill(): ${build.hasAllowKill()}
+                        |\t  Build.hasAllowTerm(): ${build.hasAllowTerm()}
+                        |\t  Build.hasntStartedYet(): ${build.hasntStartedYet()}
+                        |\t  Build.isBuilding(): ${build.isBuilding()}
+                        |\t  Build.isInProgress(): ${build.isInProgress()}
+                        |\t  Build.isLogUpdated(): ${build.isLogUpdated()}
+                        |\t  build: ${build}""".stripMargin() + '\n')
                 if (abortJobs && (build.isBuilding() || build.isInProgress())) {
                     build.finish(hudson.model.Result.ABORTED,
-                            new IOException(
-                                    "\nBuild Aborted by Jenkins Script Console" +
-                                            "\nUser: ${User.current().getId()} (${User.current()})" +
-                                            "\nBuild: ${build}" +
-                                            "\nStack Trace:\n"
+                            new IOException("""
+                                    |Build Aborted by Jenkins Script Console
+                                    |User: ${User.current().getId()} (${User.current()})
+                                    |Build: ${build}
+                                    |Stack Trace:""".stripMargin()
                             )
                     )
                     jobsAborted++
@@ -72,14 +80,14 @@ Jenkins.instance.getAllItems(AbstractItem.class).each { item ->
     }
 }
 
-println("***************************************** Processing Complete **********************************************************" +
-        "\njobNameSearchParam: '${jobNameSearchParam}'" +
-        "\nabortJobs: ${abortJobs}" +
-        "\nclassesToAbort: ${classesToAbort}" +
-        "\njobsFoundMatchingSearch: ${jobsFoundMatchingSearch}" +
-        "\njobsFoundInClassesToAbort: ${jobsFoundInClassesToAbort}" +
-        "\njobsAborted: ${jobsAborted}"
-)
+println("""
+***************************************** Processing Complete **********************************************************" +
+jobNameSearchParam: '${jobNameSearchParam}'
+abortJobs: ${abortJobs}
+classesToAbort: ${classesToAbort}
+jobsFoundMatchingSearch: ${jobsFoundMatchingSearch}
+jobsFoundInClassesToAbort: ${jobsFoundInClassesToAbort}
+jobsAborted: ${jobsAborted}""")
 println("\nitemsNotProcessed (wrong type or not matching jobNameSearchParam):")
 itemsNotProcessed.each { itemType, itemListForType ->
     println("itemType: ${itemType}")
