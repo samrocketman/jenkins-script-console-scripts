@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2015-2019 Sam Gleske - https://github.com/samrocketman/jenkins-script-console-scripts
+    Copyright (c) 2015-2020 Sam Gleske - https://github.com/samrocketman/jenkins-script-console-scripts
 
     Permission is hereby granted, free of charge, to any person obtaining a copy of
     this software and associated documentation files (the "Software"), to deal in
@@ -88,7 +88,7 @@ Jenkins.instance.getAllItems(Job.class).each { Job job ->
         if(formatJervis) {
             projects << "${job.fullName.split('/')[0]}/${job.displayName.split(' ')[0]}"
         } else {
-            projects << i.fullName
+            projects << job.fullName
         }
     }
 }
