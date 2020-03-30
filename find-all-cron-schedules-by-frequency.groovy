@@ -56,6 +56,9 @@ boolean isHourlySchedule(String cron) {
 }
 
 void displaySchedule(String frequency, Map schedules) {
+    if(!schedules) {
+        return
+    }
     int half = ((80 - frequency.size()) / 2) - 1
     int padding = 80 - (2*half + frequency.size()) - 2
     println(['='*half, frequency, '='*half].join(' ') + '='*padding)
