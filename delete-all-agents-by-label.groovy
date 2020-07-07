@@ -34,7 +34,16 @@ import jenkins.model.Jenkins
 String agent_label = 'some-agent'
 
 Label agent = (Jenkins.instance.getLabel(agent_label)) ?: (new LabelAtom(agent_label))
-agent.nodes*.computer.with {
+
+List computers = agent.nodes*.computer
+
+// put all agents in offline mode (some may be in use)
+computers*.doToggleOffline()
+
+// delete inactive agents
+computers.findAll {
+    it.countBusy() == 0
+}.with {
     it*.doDoDelete()
     println "${it.size()} agents deleted."
 }
