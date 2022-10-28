@@ -26,6 +26,6 @@
 import jenkins.model.Jenkins
 
 println "Jenkins version ${Jenkins.instance.version}"
-println Jenkins.instance.pluginManager.plugins.sort { it.shortName }.collect { p ->
+println Jenkins.instance.pluginManager.plugins.toList().sort { it.shortName }.collect { p ->
     "${p.shortName} ${p.version}"
 }.join('\n')
