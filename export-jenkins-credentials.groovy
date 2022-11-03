@@ -22,14 +22,11 @@
    This script does a credential export which is compatible with
    https://github.com/samrocketman/jenkins-bootstrap-shared/blob/master/scripts/credentials-multitype.groovy
  */
-import com.cloudbees.jenkins.plugins.awscredentials.AWSCredentialsImpl
-import com.cloudbees.jenkins.plugins.sshcredentials.impl.BasicSSHUserPrivateKey
 import com.cloudbees.plugins.credentials.SystemCredentialsProvider
 import com.cloudbees.plugins.credentials.domains.Domain
 import com.cloudbees.plugins.credentials.impl.UsernamePasswordCredentialsImpl
 import hudson.util.Secret
 import jenkins.model.Jenkins
-import org.jenkinsci.plugins.plaincredentials.impl.StringCredentialsImpl
 
 SystemCredentialsProvider creds_config = Jenkins.instance.getExtensionList(SystemCredentialsProvider).first()
 
@@ -37,8 +34,8 @@ List creds = creds_config.getDomainCredentialsMap().get(Domain.global())
 
 def getCredential(def cred) {
     Map credential = [:]
-    switch(cred) {
-        case AWSCredentialsImpl:
+    switch(cred.class.simpleName) {
+        case 'AWSCredentialsImpl':
             credential = [
                 credential_type: 'AWSCredentialsImpl',
                 credentials_id: cred.id,
@@ -50,7 +47,7 @@ def getCredential(def cred) {
                 scope: cred.scope.toString().toLowerCase()
             ]
             break
-        case BasicSSHUserPrivateKey:
+        case 'BasicSSHUserPrivateKey':
             credential = [
                 credential_type: 'BasicSSHUserPrivateKey',
                 credentials_id: cred.id,
@@ -61,7 +58,7 @@ def getCredential(def cred) {
                 scope: cred.scope.toString().toLowerCase()
             ]
             break
-        case UsernamePasswordCredentialsImpl:
+        case 'UsernamePasswordCredentialsImpl':
             credential = [
                 credential_type: 'UsernamePasswordCredentialsImpl',
                 credentials_id: cred.id,
@@ -71,13 +68,24 @@ def getCredential(def cred) {
                 scope: cred.scope.toString().toLowerCase()
             ]
             break
-        case StringCredentialsImpl:
+        case 'StringCredentialsImpl':
             credential = [
                 credential_type: 'StringCredentialsImpl',
                 credentials_id: cred.id,
                 description: cred.description ?: '',
                 secret: cred.secret.plainText ?: '',
                 scope: cred.scope.toString().toLowerCase()
+            ]
+            break
+        case 'GitHubAppCredentials':
+            credential = [
+                credential_type: 'GitHubAppCredentials',
+                credentials_id: cred.id,
+                description: cred.description ?: '',
+                appid: cred.appID,
+                apiuri: cred.apiUri,
+                owner: cred.owner,
+                key: ((cred.privateKey instanceof Secret) ? cred.privateKey.plainText : cred.privateKey) ?: ''
             ]
             break
         default:
