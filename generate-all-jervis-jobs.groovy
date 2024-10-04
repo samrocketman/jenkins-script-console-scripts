@@ -57,31 +57,31 @@ List<String> matchingNames = []
  */
 
 Integer getLastBuildTimestamp(Item item) {
-  (item?.builds?.find { it }?.timestamp?.toInstant()?.epochSecond) ?: 0
+    (item?.builds?.find { it }?.timestamp?.toInstant()?.epochSecond) ?: 0
 }
 
 List<Item> sortBranchesByLastBuild(WorkflowMultiBranchProject project) {
-  project.items.sort { a, b ->
-    Integer lastBuildA = getLastBuildTimestamp(a)
-    Integer lastBuildB = getLastBuildTimestamp(b)
-    if(!lastBuildA && !lastBuildB) {
-      b.builds.size() <=> a.builds.size()
-    } else {
-      lastBuildB <=> lastBuildA
+    project.items.sort { a, b ->
+        Integer lastBuildA = getLastBuildTimestamp(a)
+        Integer lastBuildB = getLastBuildTimestamp(b)
+        if(!lastBuildA && !lastBuildB) {
+            b.builds.size() <=> a.builds.size()
+        } else {
+            lastBuildB <=> lastBuildA
+        }
     }
-  }
 }
 
 List<WorkflowMultiBranchProject> sortProjectsByLastBuilt(List<WorkflowMultiBranchProject> projects) {
-  projects.sort { a, b ->
-    Integer lastBuildA = getLastBuildTimestamp(sortBranchesByLastBuild(a).find { it })
-    Integer lastBuildB = getLastBuildTimestamp(sortBranchesByLastBuild(b).find { it })
-    if(!lastBuildA && !lastBuildB) {
-      b.items.size() <=> a.items.size()
-    } else {
-      lastBuildB <=> lastBuildA
+    projects.sort { a, b ->
+        Integer lastBuildA = getLastBuildTimestamp(sortBranchesByLastBuild(a).find { it })
+        Integer lastBuildB = getLastBuildTimestamp(sortBranchesByLastBuild(b).find { it })
+        if(!lastBuildA && !lastBuildB) {
+            b.items.size() <=> a.items.size()
+        } else {
+            lastBuildB <=> lastBuildA
+        }
     }
-  }
 }
 
 /*
