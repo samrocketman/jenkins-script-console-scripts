@@ -105,7 +105,7 @@ sortProjectsByLastBuilt(Jenkins.instance.getAllItems(WorkflowMultiBranchProject)
     project.getSCMSources().find { source ->
         source in GitHubSCMSource
     }.getRepositoryUrl() -~ '^https://github.com/'
-}.sort().unique().each { String project ->
+}.each { String project ->
     def actions = new ParametersAction([new StringParameterValue('project', project)])
     generator_job.scheduleBuild2(0, actions)
     if(binding.hasVariable('out')) {
