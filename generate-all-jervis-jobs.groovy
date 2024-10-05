@@ -105,7 +105,7 @@ sortProjectsByLastBuilt(Jenkins.instance.getAllItems(WorkflowMultiBranchProject)
     project.getSCMSources().find { source ->
         source in GitHubSCMSource
     }.getRepositoryUrl() -~ '^https://github.com/'
-}.each { String project ->
+}.unique().each { String project ->
     def actions = new ParametersAction([new StringParameterValue('project', project)])
     generator_job.scheduleBuild2(0, actions)
     if(binding.hasVariable('out')) {
@@ -113,7 +113,9 @@ sortProjectsByLastBuilt(Jenkins.instance.getAllItems(WorkflowMultiBranchProject)
         if(milliSecondsToWait) {
             out.println "Sleeping for ${secondsToWaitBetweenBuilds} seconds..."
         }
-        sleep(milliSecondsToWait)
+        // Thread.sleep instead of sleep allows aborting via Jenkins UI
+        // https://stackoverflow.com/questions/46060040/java-thread-interruption-wont-work-for-me-in-groovy
+        Thread.sleep(milliSecondsToWait)
     }
     else {
         println "Scheduled project ${project}."
