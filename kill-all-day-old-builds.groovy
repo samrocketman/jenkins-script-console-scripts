@@ -36,30 +36,27 @@ import hudson.model.Run
 import java.util.Calendar
 import jenkins.model.Jenkins
 import org.jenkinsci.plugins.workflow.job.WorkflowRun
-import org.jenkinsci.plugins.workflow.support.steps.StageStepExecution
 
 //24 hours in a day, 3600 seconds in 1 hour, 1000 milliseconds in 1 second
 long time_in_millis = 24*3600*1000
 Calendar rightNow = Calendar.getInstance()
 
-Jenkins.instance.getAllItems(Job.class).findAll { Job job ->
-    job.isBuilding()
-}.collect { Job job ->
+Jenkins.instance.getAllItems(Job.class).collect { Job job ->
     //find all matching items and return a list but if null then return an empty list
     job.builds.findAll { Run run ->
         run.isBuilding() && ((rightNow.getTimeInMillis() - run.getStartTimeInMillis()) > time_in_millis)
     } ?: []
-}.sum().each { Run item ->
+}.flatten().each { Run item ->
     if(item in WorkflowRun) {
         WorkflowRun run = (WorkflowRun) item
         //hard kill
         run.doKill()
-        //release pipeline concurrency locks
-        StageStepExecution.exit(run)
         println "Killed ${run}"
     } else if(item in FreeStyleBuild) {
         FreeStyleBuild run = (FreeStyleBuild) item
         run.executor.interrupt(Result.ABORTED)
+        Thread.sleep(1000)
+        run.executor.stop()
         println "Killed ${run}"
     } else {
         println "WARNING: Don't know how to handle ${item.class}"
