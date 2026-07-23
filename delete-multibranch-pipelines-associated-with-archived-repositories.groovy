@@ -1,5 +1,5 @@
 /*
-    Copyright (c) 2015-2024 Sam Gleske - https://github.com/samrocketman/jenkins-script-console-scripts
+    Copyright (c) 2015-2026 Sam Gleske - https://github.com/samrocketman/jenkins-script-console-scripts
 
     Permission is hereby granted, free of charge, to any person obtaining a copy of
     this software and associated documentation files (the "Software"), to deal in
@@ -64,22 +64,23 @@ class JenkinsTokenCredential implements TokenCredential {
     }
 }
 
-Map repos = Jenkins.instance.getAllItems(WorkflowMultiBranchProject).findAll {
-    it.sources.find { scm ->
-        scm.source in GitHubSCMSource
+// Multiple Jenkins jobs may point at the same GitHub repository.  This
+// structure keys on repoWithOwner so that repository archive status is queried
+// only once but known for all jobs referencing the repository in Jenkins.
+Map repos = [:].withDefault { [] }
+Jenkins.instance.getAllItems(WorkflowMultiBranchProject).findAll { it.sources }.each { job ->
+    job.sources.first().source.with {
+        String repoWithOwner = it.repoOwner + '/' + it.repository
+        Map entry = [(job.fullName): [owner: it.repoOwner, name: it.repository, repoWithOwner: repoWithOwner]]
+        repos[repoWithOwner] << entry
     }
-}.collect { job ->
-    job.sources.find { scm ->
-        scm.source in GitHubSCMSource
-    }.source.with {
-        [
-            (job.fullName): [
-                owner: it.repoOwner,
-                name: it.repository,
-                repoWithOwner: it.repoOwner + '/' + it.repository
-            ]
-        ]
-    }
+}
+
+// Flatten the list of per-job metadata maps into a single map of
+// jobFullName -> metadata for each repository.
+//   repos = [ 'owner/name': [ jobFullName: [owner, name, repoWithOwner], ... ], ... ]
+repos = repos.collect { k, v ->
+    [(k): v.sum()]
 }.sum()
 
 Map groupBy100 = [:]
@@ -97,7 +98,7 @@ repos.each { k, v ->
 }
 
 String graphql_template = '''
-query {<% int i = 0; repos.each { nameWithOwner, repo -> %>
+query {<% int i = 0; repos.each { nameWithOwner, jobs -> def repo = jobs.values().first() %>
   repo${i++}: repository(owner: "${repo.owner}", name: "${repo.name}") {
     nameWithOwner
     isArchived
@@ -107,51 +108,72 @@ query {<% int i = 0; repos.each { nameWithOwner, repo -> %>
 
 List queries = groupBy100.collect { k, v -> getScriptFromTemplate(graphql_template, [repos: v]) }
 List archivedRepos = []
+Map queryRepoResult = [:]
 
 GitHubGraphQL github = new GitHubGraphQL()
 github.credential = new JenkinsTokenCredential('github-token')
-limit = 300
-count = 0
 queries.each { String query ->
     int retryWait = 3
+    int retryCurrent = 0
+    int retryMax = 10
+    int sleepInterval = 0
     while(true) {
         try {
-            github.sendGQL(query).data.each { k, repo ->
+            Map response = github.sendGQL(query)
+            if(response.errors) {
+                retryCurrent++
+                if(retryCurrent >= retryMax) {
+                    throw new Exception("\n\nMax retry reached: GraphQL errors were encountered.\n\n${response.errors}\n\n")
+                }
+                sleepInterval = (new Random()).nextInt(retryWait) + 1
+                println("Will try GitHub communication again after sleeping for ${sleepInterval} seconds.")
+                Thread.sleep(retryWait*1000)
+                retryWait = (retryWait + 3) % 100
+                // retry sendGQL for this query by restarting the while loop.
+                continue
+            }
+            response.data.each { k, repo ->
+                if(!repo) {
+                    return
+                }
+                queryRepoResult[repo.nameWithOwner] = repo.isArchived
                 if(repo.isArchived) {
                     archivedRepos << repo.nameWithOwner
                 }
             }
             break
         } catch(Exception e) {
-            count++
-            if(count > limit) {
-                // Useful if we will indefinitely encounter exceptions.
-                // Retrying GraphQL requests should be relatively rare.
+            retryCurrent++
+            if(retryCurrent >= retryMax) {
                 throw e
             }
-            int sleepInterval = (new Random()).nextInt(retryWait) + 1
+            sleepInterval = (new Random()).nextInt(retryWait) + 1
             println("Will try GitHub communication again after sleeping for ${sleepInterval} seconds.")
-            sleep(retryWait*1000)
+            Thread.sleep(retryWait*1000)
             retryWait = (retryWait + 3) % 100
-            //retry request indefinitely changing up random sleep intervals
+            //retry request to a limit changing up random sleep intervals
         }
     }
 }
-println("${(dryRun ? 'DRYRUN: ' : '')}Number of jobs related to archived repositories: ${archivedRepos.size()}")
-List jenkinsJobsToDelete = repos.findAll { k, v ->
-    v.repoWithOwner in archivedRepos
-}.collect { k, v -> k }
-println("    ${jenkinsJobsToDelete.join('\n    ')}")
 
-if(!dryRun) {
-    jenkinsJobsToDelete.each {
-        Jenkins.instance.getItemByFullName(it).delete()
-        println("Deleted job ${it}")
+// Collect repositories which returned null from GraphQL
+// they must also be deleted, as they were either deleted or renamed.
+archivedRepos += (repos.keySet() - queryRepoResult.keySet()).toList()
+
+// Collect every job (across all archived/missing repositories) to delete.
+//   jenkinsJobsToDelete = [ jobFullName: [owner, name, repoWithOwner], ... ]
+Map jenkinsJobsToDelete = [:]
+repos.findAll { k, v ->
+    k in archivedRepos
+}.each { k, v ->
+    jenkinsJobsToDelete << v
+}
+
+println("Number of Jenkins jobs to delete: ${jenkinsJobsToDelete.size()}")
+jenkinsJobsToDelete.each { String jobFullName, Map meta ->
+    if(!dryRun) {
+        Jenkins.instance.getItemByFullName(jobFullName).delete()
     }
+    println("* ${(dryRun) ? 'DRYRUN: ' : ''}Deleted job ${jobFullName} with GitHub URL https://github.com/${meta.repoWithOwner}")
 }
-if(!dryRun) {
-    println("${jenkinsJobsToDelete.size()} jenkins jobs have been deleted related to archived GitHub repositories.")
-}
-else {
-    println 'Nothing was deleted because dryRun is enabled.'
-}
+println("${(dryRun) ? 'DRYRUN: ' : ''}${jenkinsJobsToDelete.size()} jenkins jobs have been deleted related to archived, renamed, or offboarded GitHub repositories.")
